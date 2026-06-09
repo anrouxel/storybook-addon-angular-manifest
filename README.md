@@ -1,0 +1,1 @@
+# Storybook Addon Angular Manifest
