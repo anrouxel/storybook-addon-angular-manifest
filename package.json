@@ -1,0 +1,63 @@
+{
+  "name": "storybook-addon-angular-manifest",
+  "version": "0.0.0",
+  "description": "Storybook addon to generate a manifest of Angular components",
+  "keywords": [
+    "storybook-addon"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://codeberg.org/anrouxel/storybook-addon-angular-manifest.git"
+  },
+  "license": "MIT",
+  "author": "Antonin Rouxel",
+  "type": "module",
+  "exports": {
+		".": "./dist/index.mjs",
+		"./preset": "./dist/preset.mjs",
+		"./package.json": "./package.json"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "*.js",
+    "*.d.ts"
+  ],
+  "scripts": {
+    "prebuild": "node -e \"fs.rmSync('./dist', { recursive: true, force: true })\"",
+    "build": "tsdown",
+    "build:watch": "npm run build -- --watch",
+    "check": "biome check ./src",
+    "check:apply": "pnpm check --write",
+    "check:apply-unsafe": "pnpm check --write --unsafe",
+    "check:ci": "biome ci ./src",
+    "format": "biome format ./src",
+    "format:write": "pnpm format --write",
+    "release": "npm run build && auto shipit"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.16",
+    "@storybook/addon-docs": "next",
+    "@storybook/icons": "^2.0.0",
+    "@types/node": "^20",
+    "auto": "^11.3.0",
+    "npm-run-all2": "^8.0.4",
+    "storybook": "next",
+    "tsdown": "^0.22.2",
+    "typescript": "^5.8.3"
+  },
+  "peerDependencies": {
+    "storybook": "*"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "storybook": {
+    "displayName": "Storybook Addon Angular Manifest",
+    "supportedFrameworks": [
+      "angular"
+    ],
+    "icon": "https://user-images.githubusercontent.com/321738/63501763-88dbf600-c4cc-11e9-96cd-94adadc2fd72.png"
+  },
+  "packageManager": "pnpm@10.22.0+sha512.bf049efe995b28f527fd2b41ae0474ce29186f7edcb3bf545087bd61fbbebb2bf75362d1307fda09c2d288e1e499787ac12d4fcb617a974718a6051f2eee741c"
+}
