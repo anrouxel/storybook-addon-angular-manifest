@@ -13,9 +13,9 @@
   "author": "Antonin Rouxel",
   "type": "module",
   "exports": {
-		".": "./dist/index.mjs",
-		"./preset": "./dist/preset.mjs",
-		"./package.json": "./package.json"
+    ".": "./dist/index.mjs",
+    "./preset": "./dist/preset.mjs",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist/**/*",
@@ -38,13 +38,13 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.16",
     "@storybook/addon-docs": "next",
-    "@storybook/icons": "^2.0.0",
-    "@types/node": "^20",
-    "auto": "^11.3.0",
-    "npm-run-all2": "^8.0.4",
+    "@storybook/icons": "^2.0.2",
+    "@types/node": "^25.9.3",
+    "auto": "^11.3.6",
+    "npm-run-all2": "^9.0.1",
     "storybook": "next",
     "tsdown": "^0.22.2",
-    "typescript": "^5.8.3"
+    "typescript": "^6.0.3"
   },
   "peerDependencies": {
     "storybook": "*"
