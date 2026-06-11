@@ -7,7 +7,11 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["src/**/*.ts"]
+		"includes": [
+			"src/**/*.ts",
+			"commitlint.config.ts",
+			"tsdown.config.ts"
+		]
 	},
 	"formatter": {
 		"enabled": true,
