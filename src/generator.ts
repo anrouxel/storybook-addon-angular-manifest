@@ -1,8 +1,4 @@
 import path from "node:path";
-import {
-	getStoryImportPathFromEntry,
-	selectComponentEntriesByComponentId,
-} from "storybook/internal/common";
 import type {
 	IndexEntry,
 	Manifests,
@@ -33,7 +29,14 @@ export const manifest: PresetPropertyFn<
 	const compodocJson = getCompodocDocumentation({ cwd });
 
 	const entriesByUniqueComponent = [
-		...selectComponentEntriesByComponentId(manifestEntries).values(),
+		...manifestEntries
+			.reduce((map, entry) => {
+				if (!map.has(entry.importPath)) {
+					map.set(entry.importPath, entry);
+				}
+				return map;
+			}, new Map<string, IndexEntry>())
+			.values(),
 	];
 
 	const manifestEntryIds = new Set(manifestEntries.map((entry) => entry.id));
@@ -41,7 +44,7 @@ export const manifest: PresetPropertyFn<
 	const components = (
 		await Promise.all(
 			entriesByUniqueComponent.map(async (entry) => {
-				const storyFilePath = getStoryImportPathFromEntry(entry);
+				const storyFilePath = entry.importPath;
 				if (!storyFilePath) {
 					return undefined;
 				}

@@ -1,4 +1,4 @@
-import { getComponentIdFromEntry } from "storybook/internal/common";
+import { toId } from "storybook/internal/csf";
 import { extractDescription } from "storybook/internal/csf-tools";
 import type { ComponentManifest, IndexEntry } from "storybook/internal/types";
 
@@ -58,7 +58,7 @@ export function buildAngularComponentManifest({
 	compodocJson: CompodocJson | null;
 	filterStoryIds?: ReadonlySet<string>;
 }): AngularComponentManifest {
-	const id = getComponentIdFromEntry(entry);
+	const id = toId(entry.title);
 	const title = entry.title.split("/").at(-1)!.replace(/\s+/g, "");
 	const name = componentName ?? title;
 
