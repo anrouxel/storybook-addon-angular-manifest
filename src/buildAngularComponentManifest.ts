@@ -1,0 +1,119 @@
+import { getComponentIdFromEntry } from "storybook/internal/common";
+import { extractDescription } from "storybook/internal/csf-tools";
+import type { ComponentManifest, IndexEntry } from "storybook/internal/types";
+
+import { findComponentByName } from "./compodoc";
+import type { CompodocJson, Component, Directive } from "./compodocTypes";
+import { extractComponentDescription } from "./extractComponentDescription";
+import { extractAngularStorySnippets } from "./resolveAngularComponents";
+import type {
+	AngularComponentRef,
+	ParsedCsf,
+	ResolvedAngularStoryEntry,
+} from "./resolveAngularComponents.ts";
+
+/**
+ * Angular component manifest with Compodoc-specific docgen data attached.
+ *
+ * Extends the base `ComponentManifest` with the raw Compodoc component entry so that consumers
+ * (e.g. the HTML debugger) can render Angular-specific documentation.
+ */
+export interface AngularComponentManifest extends ComponentManifest {
+	compodoc?: Component | Directive;
+	[key: string]: unknown;
+}
+
+/** Build an import statement string for the component. */
+function buildImportStatement(
+	componentName: string | undefined,
+	component: AngularComponentRef | undefined,
+): string {
+	if (!componentName || !component?.importSpecifier) {
+		return "";
+	}
+	return `import { ${componentName} } from "${component.importSpecifier}";`;
+}
+
+/**
+ * Build an {@link AngularComponentManifest} from a resolved story file entry and the Compodoc
+ * documentation output. This is the output shape for the Angular `experimental_manifests` preset.
+ */
+export function buildAngularComponentManifest({
+	entry,
+	storyFilePath,
+	storyFile,
+	csf,
+	componentName,
+	component,
+	compodocJson,
+	filterStoryIds,
+}: {
+	entry: IndexEntry;
+	storyPath: string;
+	storyFilePath: string;
+	storyFile: string;
+	csf: ParsedCsf;
+	componentName: string | undefined;
+	component: AngularComponentRef | undefined;
+	compodocJson: CompodocJson | null;
+	filterStoryIds?: ReadonlySet<string>;
+}): AngularComponentManifest {
+	const id = getComponentIdFromEntry(entry);
+	const title = entry.title.split("/").at(-1)!.replace(/\s+/g, "");
+	const name = componentName ?? title;
+
+	const compodocData =
+		componentName && compodocJson
+			? findComponentByName(componentName, compodocJson)
+			: undefined;
+
+	const stories: ResolvedAngularStoryEntry[] = extractAngularStorySnippets(
+		csf,
+		compodocData as Component | Directive | undefined,
+		filterStoryIds,
+	);
+
+	const importStatement = buildImportStatement(componentName, component);
+
+	const base = {
+		id,
+		name,
+		path: storyFilePath,
+		stories,
+		import: importStatement || undefined,
+		jsDocTags: {},
+	} satisfies Partial<AngularComponentManifest>;
+
+	if (!compodocData) {
+		const error = !csf._meta?.component
+			? {
+					name: "No component found",
+					message:
+						"We could not detect the component from your story file. Specify meta.component.",
+				}
+			: {
+					name: "Component not found in Compodoc output",
+					message:
+						`"${componentName}" was not found in the Compodoc documentation. ` +
+						`Make sure your tsconfig includes all source files.\n\n${entry.importPath}:\n${storyFile}`,
+				};
+
+		return { ...base, error };
+	}
+
+	const compodocDescription =
+		compodocData.rawdescription || compodocData.description;
+	const metaJsDoc = extractDescription(csf._metaStatement) || undefined;
+	const { description, summary, jsDocTags } = extractComponentDescription(
+		metaJsDoc,
+		compodocDescription,
+	);
+
+	return {
+		...base,
+		description,
+		summary,
+		jsDocTags,
+		compodoc: compodocData as Component | Directive,
+	};
+}

@@ -1,5 +1,5 @@
 {
-  "name": "storybook-addon-angular-manifest",
+  "name": "@anrouxel/storybook-addon-angular-manifest",
   "version": "0.0.0",
   "description": "Storybook addon to generate a manifest of Angular components",
   "keywords": [
@@ -36,17 +36,15 @@
     "release": "npm run build && auto shipit"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.16",
+    "@biomejs/biome": "2.5.0",
     "@commitlint/cli": "^21.0.2",
     "@commitlint/config-conventional": "^21.0.2",
     "@commitlint/types": "^21.0.1",
-    "@storybook/addon-docs": "next",
-    "@storybook/icons": "^2.0.2",
     "@types/node": "^25.9.3",
     "auto": "^11.3.6",
     "lefthook": "^2.1.9",
     "npm-run-all2": "^9.0.1",
-    "storybook": "next",
+    "storybook": "latest",
     "tsdown": "^0.22.2",
     "typescript": "^6.0.3"
   },
@@ -63,5 +61,11 @@
     ],
     "icon": "https://user-images.githubusercontent.com/321738/63501763-88dbf600-c4cc-11e9-96cd-94adadc2fd72.png"
   },
-  "packageManager": "pnpm@10.22.0+sha512.bf049efe995b28f527fd2b41ae0474ce29186f7edcb3bf545087bd61fbbebb2bf75362d1307fda09c2d288e1e499787ac12d4fcb617a974718a6051f2eee741c"
+  "packageManager": "pnpm@10.22.0+sha512.bf049efe995b28f527fd2b41ae0474ce29186f7edcb3bf545087bd61fbbebb2bf75362d1307fda09c2d288e1e499787ac12d4fcb617a974718a6051f2eee741c",
+  "dependencies": {
+    "@compodoc/compodoc": "^1.2.1",
+    "comment-parser": "^1.4.7",
+    "empathic": "^2.0.1",
+    "pathe": "^2.0.3"
+  }
 }
