@@ -3,11 +3,16 @@
   "version": "0.0.0",
   "description": "Storybook addon to generate a manifest of Angular components",
   "keywords": [
-    "storybook-addon"
+    "storybook-addon",
+    "storybook",
+    "angular",
+    "manifest",
+    "mcp",
+    "ai"
   ],
   "repository": {
     "type": "git",
-    "url": "https://codeberg.org/anrouxel/storybook-addon-angular-manifest.git"
+    "url": "https://github.com/anrouxel/storybook-addon-angular-manifest.git"
   },
   "license": "MIT",
   "author": "Antonin Rouxel",
