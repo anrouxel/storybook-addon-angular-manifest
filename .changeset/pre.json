@@ -1,0 +1,8 @@
+{
+  "mode": "pre",
+  "tag": "next",
+  "initialVersions": {
+    "storybook-addon-angular-manifest": "0.0.0"
+  },
+  "changesets": []
+}
