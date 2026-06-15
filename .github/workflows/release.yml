@@ -1,7 +1,5 @@
 name: Release
 
-name: Publish
-
 on:
   push:
     branches:
