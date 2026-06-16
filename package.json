@@ -44,7 +44,7 @@
     "auto": "^11.3.6",
     "lefthook": "^2.1.9",
     "npm-run-all2": "^9.0.1",
-    "storybook": "latest",
+    "storybook": "next",
     "tsdown": "^0.22.2",
     "typescript": "^6.0.3"
   },

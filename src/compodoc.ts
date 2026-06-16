@@ -1,18 +1,10 @@
-import { global } from "@storybook/global";
-import { logger } from "storybook/internal/client-logger";
-import type { ArgTypes, InputType, SBType } from "storybook/internal/types";
-
 import type {
-	Argument,
 	Class,
 	CompodocJson,
 	Component,
 	Directive,
 	Injectable,
-	JsDocTag,
-	Method,
 	Pipe,
-	Property,
 } from "./compodocTypes";
 
 export const findComponentByName = (name: string, compodocJson: CompodocJson) =>

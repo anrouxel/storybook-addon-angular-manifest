@@ -1,1 +1,1 @@
-export { manifest } from "./generator";
+export { manifest as experimental_manifests } from "./generator";
