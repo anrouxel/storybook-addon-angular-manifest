@@ -15,13 +15,18 @@ import type {
 /**
  * Angular component manifest with Compodoc-specific docgen data attached.
  *
- * Extends the base `ComponentManifest` with the raw Compodoc component entry so that consumers
- * (e.g. the HTML debugger) can render Angular-specific documentation.
+ * Extends the base `ComponentManifest` with Angular-specific metadata from Compodoc 2.0
+ * so that consumers (e.g. the HTML debugger, AI tools) can render rich documentation.
  */
 export interface AngularComponentManifest extends ComponentManifest {
+	/** Full Compodoc component/directive entry. */
 	compodoc?: Component | Directive;
-	/** `true` when the component/directive is declared as standalone (Compodoc 2.0). */
+	/** `true` for standalone components/directives/pipes (Compodoc 2.0). */
 	standalone?: boolean;
+	/** Change detection strategy, e.g. `"ChangeDetectionStrategy.OnPush"`. */
+	changeDetection?: string;
+	/** Raw Angular selector, e.g. `"button[lib-btn], a[lib-btn]"`. */
+	selector?: string;
 	[key: string]: unknown;
 }
 
@@ -112,12 +117,16 @@ export function buildAngularComponentManifest({
 		compodocDescription,
 	);
 
+	const dir = compodocData as Directive | undefined;
+
 	return {
 		...base,
 		description,
 		summary,
 		jsDocTags,
 		compodoc: compodocData as Component | Directive,
-		standalone: (compodocData as Directive | undefined)?.standalone,
+		standalone: dir?.standalone,
+		changeDetection: dir?.changeDetection,
+		selector: dir?.selector,
 	};
 }

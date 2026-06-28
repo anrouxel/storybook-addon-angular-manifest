@@ -33,7 +33,14 @@ export interface ResolvedAngularStory {
 export interface ResolvedAngularStoryEntry {
 	id: string;
 	name: string;
+	/** Primary snippet (first selector variant). */
 	snippet?: string;
+	/**
+	 * One snippet per selector variant when the Angular selector contains multiple
+	 * comma-separated parts (e.g. `"button[lib-btn], a[lib-btn]"`).
+	 * Always populated when `snippet` is defined.
+	 */
+	snippets?: string[];
 	description?: string;
 	summary?: string;
 	error?: { name: string; message: string };
@@ -103,12 +110,14 @@ export function extractAngularStorySnippets(
 					(tags?.describe?.[0] || tags?.desc?.[0]) ?? description;
 
 				const args = (story as any).args as Record<string, unknown> | undefined;
-				const snippet = buildAngularSnippet(selector, componentName, inputs, args);
+				const snippets = buildAngularSnippets(selector, inputs, args);
+				const snippet = snippets?.[0];
 
 				return {
 					id: story.id,
 					name,
 					snippet,
+					snippets: snippets?.length ? snippets : undefined,
 					description: finalDescription?.trim(),
 					summary: tags.summary?.[0],
 				};
@@ -123,42 +132,54 @@ export function extractAngularStorySnippets(
 		});
 }
 
+// ---------------------------------------------------------------------------
+// Angular selector parsing
+// ---------------------------------------------------------------------------
+
 /**
- * Derive a CSS selector from a PascalCase component class name when Compodoc
- * doesn't provide one (e.g. `ButtonComponent` → `app-button`).
+ * Parsed representation of one part of an Angular CSS selector.
+ *
+ * Examples:
+ *   `app-button`        → { element: 'app-button', attributes: [] }
+ *   `[lib-btn]`         → { element: undefined,    attributes: ['lib-btn'] }
+ *   `button[lib-btn]`   → { element: 'button',     attributes: ['lib-btn'] }
  */
-export function selectorFromClassName(className: string): string {
-	return `app-${className
-		.replace(/Component$|Directive$/, "")
-		.replace(/([A-Z])/g, (m, l, i) => (i === 0 ? l : `-${l}`))
-		.toLowerCase()}`;
+interface ParsedSelectorPart {
+	element: string | undefined;
+	attributes: string[];
 }
 
 /**
- * Generate a minimal Angular template snippet for a story, suitable for the manifest.
- *
- * Uses the component's selector (or a PascalCase fallback) and binds story `args`
- * that match declared `@Input()` properties. Signal inputs with `required: true`
- * are always included even when absent from `args`.
+ * Parse a single Angular selector part (no comma) into its element + attribute parts.
+ * Ignores pseudo-classes, class selectors, and everything we don't need for snippets.
  */
-function buildAngularSnippet(
-	selector: string | undefined,
-	componentName: string | undefined,
+function parseSelectorPart(part: string): ParsedSelectorPart {
+	const trimmed = part.trim();
+
+	// Extract all attribute selectors [attr] or [attr=val]
+	const attrMatches = [...trimmed.matchAll(/\[([^\]=]+)(?:=[^\]]+)?\]/g)];
+	const attributes = attrMatches.map((m) => m[1].trim());
+
+	// The element tag is everything before the first [ or . or :
+	const elementMatch = trimmed.match(/^([a-z][\w-]*)/i);
+	const element = elementMatch?.[1];
+
+	return { element, attributes };
+}
+
+/**
+ * Build the attribute bindings string for Angular inputs.
+ *
+ * - Signal `input.required()` inputs get a placeholder when missing from `args`.
+ * - Uses the public name (alias) from Compodoc, not `actualName`.
+ */
+function buildBindings(
 	inputs: import("./compodocTypes").Property[],
 	args: Record<string, unknown> | undefined,
-): string | undefined {
-	const tag =
-		selector ?? (componentName ? selectorFromClassName(componentName) : undefined);
-	if (!tag) {
-		return undefined;
-	}
-
-	// Build a lookup from the public name (alias or property name) → Property
+): string[] {
 	const inputByName = new Map(inputs.map((i) => [i.name, i]));
-
 	const bindings: string[] = [];
 
-	// Required signal inputs get a placeholder even when not in args
 	for (const input of inputs) {
 		if (input.required && !(args && input.name in args)) {
 			bindings.push(`[${input.name}]="/* required */"`);
@@ -176,11 +197,54 @@ function buildAngularSnippet(
 		}
 	}
 
-	if (bindings.length === 0) {
-		return `<${tag}></${tag}>`;
+	return bindings;
+}
+
+/**
+ * Render one snippet from a parsed selector part + bindings.
+ *
+ * - Element selector (`app-button`): `<app-button [i]="v"></app-button>`
+ * - Attribute-only (`[lib-btn]`):    `<div lib-btn [i]="v"></div>`  (fallback host: div)
+ * - Compound (`button[lib-btn]`):    `<button lib-btn [i]="v"></button>`
+ */
+function renderSnippet(
+	{ element, attributes }: ParsedSelectorPart,
+	bindings: string[],
+): string {
+	const host = element ?? "div";
+	const isVoid = ["input", "br", "hr", "img", "area", "link", "meta"].includes(host);
+
+	const parts = [
+		host,
+		...attributes,
+		...bindings,
+	].join(" ");
+
+	return isVoid ? `<${parts}>` : `<${parts}></${host}>`;
+}
+
+/**
+ * Generate one Angular template snippet per selector variant.
+ *
+ * A selector like `"button[lib-btn], a[lib-btn]"` produces two snippets so
+ * consumers can show all valid host-element usages.
+ *
+ * Returns `undefined` when the selector is missing (no guess is attempted).
+ */
+function buildAngularSnippets(
+	selector: string | undefined,
+	inputs: import("./compodocTypes").Property[],
+	args: Record<string, unknown> | undefined,
+): string[] | undefined {
+	if (!selector) {
+		return undefined;
 	}
 
-	return `<${tag} ${bindings.join(" ")}></${tag}>`;
+	const bindings = buildBindings(inputs, args);
+
+	return selector
+		.split(",")
+		.map((part) => renderSnippet(parseSelectorPart(part), bindings));
 }
 
 // ---------------------------------------------------------------------------
