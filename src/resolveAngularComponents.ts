@@ -119,8 +119,11 @@ export function extractAngularStorySnippets(
 
 				const args = (story as any).args as Record<string, unknown> | undefined;
 
-				// Story-defined render template takes priority over the auto-generated snippet
-				const renderTemplate = extractStoryRenderTemplate(sourceFile, storyExport);
+				// @useTemplate opt-in: use render.template as snippet instead of Compodoc-generated one
+				const useTemplate = "@useTemplate" in (tags ?? {});
+				const renderTemplate = useTemplate
+					? extractStoryRenderTemplate(sourceFile, storyExport)
+					: undefined;
 				const snippets = renderTemplate
 					? [renderTemplate]
 					: buildAngularSnippets(selector, inputs, args);
