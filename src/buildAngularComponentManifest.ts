@@ -94,7 +94,7 @@ export function buildAngularComponentManifest({
 	filterStoryIds?: ReadonlySet<string>;
 }): AngularComponentManifest {
 	const id = getComponentIdFromEntry(entry);
-	const title = entry.title.split("/").at(-1)!.replace(/\s+/g, "");
+	const title = entry.title.split("/").at(-1)?.replace(/\s+/g, "");
 	const name = componentName ?? title;
 
 	const compodocData =

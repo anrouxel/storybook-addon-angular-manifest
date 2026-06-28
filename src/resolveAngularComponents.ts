@@ -89,7 +89,7 @@ export async function resolveAngularStoryComponent(options: {
 export function extractAngularStorySnippets(
 	csf: ParsedCsf,
 	compodocData: Component | Directive | null | undefined,
-	componentName: string | undefined,
+	_componentName: string | undefined,
 	filterStoryIds?: ReadonlySet<string>,
 ): ResolvedAngularStoryEntry[] {
 	const selector = (compodocData as any)?.selector as string | undefined;
@@ -173,7 +173,9 @@ export function extractStoryRenderTemplate(
 		if (!ts.isVariableStatement(statement)) continue;
 
 		const decl = statement.declarationList.declarations.find(
-			(d) => ts.isIdentifier(d.name) && (d.name as ts.Identifier).text === storyExportName,
+			(d) =>
+				ts.isIdentifier(d.name) &&
+				(d.name as ts.Identifier).text === storyExportName,
 		);
 		if (!decl?.initializer || !ts.isObjectLiteralExpression(decl.initializer))
 			continue;
@@ -345,13 +347,11 @@ function renderSnippet(
 	bindings: string[],
 ): string {
 	const host = element ?? "div";
-	const isVoid = ["input", "br", "hr", "img", "area", "link", "meta"].includes(host);
-
-	const parts = [
+	const isVoid = ["input", "br", "hr", "img", "area", "link", "meta"].includes(
 		host,
-		...attributes,
-		...bindings,
-	].join(" ");
+	);
+
+	const parts = [host, ...attributes, ...bindings].join(" ");
 
 	return isVoid ? `<${parts}>` : `<${parts}></${host}>`;
 }

@@ -1,12 +1,11 @@
-import * as ts from "typescript";
 import { loadCsf } from "storybook/internal/csf-tools";
+import * as ts from "typescript";
 import { describe, expect, it } from "vitest";
-
+import type { ParsedCsf } from "./resolveAngularComponents";
 import {
 	extractAngularStorySnippets,
 	extractStoryRenderTemplate,
 } from "./resolveAngularComponents";
-import type { ParsedCsf } from "./resolveAngularComponents";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -52,7 +51,7 @@ describe("extractStoryRenderTemplate", () => {
       };
     `);
 		expect(extractStoryRenderTemplate(source, "Primary")).toBe(
-			"<app-button [label]=\"label\"></app-button>",
+			'<app-button [label]="label"></app-button>',
 		);
 	});
 
@@ -117,7 +116,9 @@ const compodocButton = {
 		{ name: "disabled", type: "boolean", optional: true },
 		{ name: "count", type: "number", optional: true },
 	],
-	outputsClass: [{ name: "clicked", type: "EventEmitter<void>", optional: true }],
+	outputsClass: [
+		{ name: "clicked", type: "EventEmitter<void>", optional: true },
+	],
 	propertiesClass: [],
 	methodsClass: [],
 };
@@ -130,7 +131,11 @@ describe("extractAngularStorySnippets — element selector", () => {
 			_storyStatements: { Primary: undefined as any },
 		});
 
-		const [entry] = extractAngularStorySnippets(csf, compodocButton, "ButtonComponent");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
 		expect(entry?.snippet).toBe("<app-button></app-button>");
 	});
 
@@ -147,7 +152,11 @@ describe("extractAngularStorySnippets — element selector", () => {
 			_storyStatements: { WithLabel: undefined as any },
 		});
 
-		const [entry] = extractAngularStorySnippets(csf, compodocButton, "ButtonComponent");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
 		expect(entry?.snippet).toContain('label="Click me"');
 	});
 
@@ -164,7 +173,11 @@ describe("extractAngularStorySnippets — element selector", () => {
 			_storyStatements: { Disabled: undefined as any },
 		});
 
-		const [entry] = extractAngularStorySnippets(csf, compodocButton, "ButtonComponent");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
 		expect(entry?.snippet).toContain(" disabled");
 		expect(entry?.snippet).not.toContain("[disabled]");
 	});
@@ -182,7 +195,11 @@ describe("extractAngularStorySnippets — element selector", () => {
 			_storyStatements: { Enabled: undefined as any },
 		});
 
-		const [entry] = extractAngularStorySnippets(csf, compodocButton, "ButtonComponent");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
 		expect(entry?.snippet).toContain('[disabled]="false"');
 	});
 
@@ -199,7 +216,11 @@ describe("extractAngularStorySnippets — element selector", () => {
 			_storyStatements: { WithCount: undefined as any },
 		});
 
-		const [entry] = extractAngularStorySnippets(csf, compodocButton, "ButtonComponent");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
 		expect(entry?.snippet).toContain('[count]="42"');
 	});
 
@@ -216,7 +237,11 @@ describe("extractAngularStorySnippets — element selector", () => {
 			_storyStatements: { WithClick: undefined as any },
 		});
 
-		const [entry] = extractAngularStorySnippets(csf, compodocButton, "ButtonComponent");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
 		expect(entry?.snippet).toContain('(clicked)="handleEvent($event)"');
 	});
 
@@ -233,7 +258,11 @@ describe("extractAngularStorySnippets — element selector", () => {
 			_storyStatements: { Primary: undefined as any },
 		});
 
-		const [entry] = extractAngularStorySnippets(csf, compodocButton, "ButtonComponent");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
 		expect(entry?.snippet).toBe("<app-button></app-button>");
 	});
 });
@@ -255,7 +284,11 @@ describe("extractAngularStorySnippets — required signal inputs", () => {
 			_storyStatements: { Primary: undefined as any },
 		});
 
-		const [entry] = extractAngularStorySnippets(csf, compodocRequired, "ButtonComponent");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocRequired,
+			"ButtonComponent",
+		);
 		expect(entry?.snippet).toContain('[label]="/* required */"');
 	});
 
@@ -272,7 +305,11 @@ describe("extractAngularStorySnippets — required signal inputs", () => {
 			_storyStatements: { Primary: undefined as any },
 		});
 
-		const [entry] = extractAngularStorySnippets(csf, compodocRequired, "ButtonComponent");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocRequired,
+			"ButtonComponent",
+		);
 		expect(entry?.snippet).not.toContain("/* required */");
 		expect(entry?.snippet).toContain('label="Click"');
 	});
@@ -296,7 +333,11 @@ describe("extractAngularStorySnippets — attribute-only selector", () => {
 			_storyStatements: { Primary: undefined as any },
 		});
 
-		const [entry] = extractAngularStorySnippets(csf, compodocAttrDir, "LibBtnDirective");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocAttrDir,
+			"LibBtnDirective",
+		);
 		expect(entry?.snippet).toBe("<div lib-btn></div>");
 	});
 });
@@ -319,7 +360,11 @@ describe("extractAngularStorySnippets — compound selector (multiple variants)"
 			_storyStatements: { Primary: undefined as any },
 		});
 
-		const [entry] = extractAngularStorySnippets(csf, compodocMulti, "LibBtnDirective");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocMulti,
+			"LibBtnDirective",
+		);
 		expect(entry?.snippets).toHaveLength(2);
 		expect(entry?.snippets?.[0]).toBe("<button lib-btn></button>");
 		expect(entry?.snippets?.[1]).toBe("<a lib-btn></a>");
@@ -351,7 +396,11 @@ describe("extractAngularStorySnippets — void elements", () => {
 			_storyStatements: { Primary: undefined as any },
 		});
 
-		const [entry] = extractAngularStorySnippets(csf, compodocInput, "InputDirective");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocInput,
+			"InputDirective",
+		);
 		expect(entry?.snippet).toBe('<input lib-input placeholder="Type here">');
 		expect(entry?.snippet).not.toContain("</input>");
 	});
@@ -366,7 +415,11 @@ describe("extractAngularStorySnippets — no selector", () => {
 		});
 
 		const compodocNoSelector = { ...compodocButton, selector: undefined };
-		const [entry] = extractAngularStorySnippets(csf, compodocNoSelector, "ButtonComponent");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocNoSelector,
+			"ButtonComponent",
+		);
 		expect(entry?.snippet).toBeUndefined();
 		expect(entry?.snippets).toBeUndefined();
 	});
@@ -387,7 +440,11 @@ export const WithTemplate = {
 `;
 		const csf = loadCsf(code, { makeTitle: () => "Button" }).parse();
 
-		const [entry] = extractAngularStorySnippets(csf, compodocButton, "ButtonComponent");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
 		expect(entry?.snippet).toBe('<app-button label="custom"></app-button>');
 	});
 
@@ -410,7 +467,11 @@ export const WithRender = {
 			_storyStatements: { WithRender: undefined as any },
 		});
 
-		const [entry] = extractAngularStorySnippets(csf, compodocButton, "ButtonComponent");
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
 		// Compodoc snippet uses the args, not the render template
 		expect(entry?.snippet).toContain("app-button");
 		expect(entry?.snippet).toContain('label="Click"');

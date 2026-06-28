@@ -13,9 +13,9 @@
 // the mocked node:fs, so they always return the actual file contents.
 import buttonComponentSource from "./__testfixtures__/button/button.component.ts?raw";
 import buttonStoriesSource from "./__testfixtures__/button/button.stories.ts?raw";
+import documentationJson from "./__testfixtures__/documentation.json?raw";
 import libBtnDirectiveSource from "./__testfixtures__/lib-btn/lib-btn.directive.ts?raw";
 import libBtnStoriesSource from "./__testfixtures__/lib-btn/lib-btn.stories.ts?raw";
-import documentationJson from "./__testfixtures__/documentation.json?raw";
 
 // ---------------------------------------------------------------------------
 // Virtual filesystem — passed to vol.fromJSON() in tests
@@ -23,7 +23,10 @@ import documentationJson from "./__testfixtures__/documentation.json?raw";
 
 export const files: Record<string, string> = {
 	// ── Project root ──────────────────────────────────────────────────────────
-	"./package.json": JSON.stringify({ name: "@my-org/my-lib", version: "0.0.0" }),
+	"./package.json": JSON.stringify({
+		name: "@my-org/my-lib",
+		version: "0.0.0",
+	}),
 
 	// ── ButtonComponent ───────────────────────────────────────────────────────
 	"./src/lib/button/button.component.ts": buttonComponentSource,

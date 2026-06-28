@@ -1,22 +1,22 @@
-import type { Meta, StoryObj } from '@storybook/angular';
-import { ButtonComponent } from '../lib/button/button.component';
+import type { Meta, StoryObj } from "@storybook/angular";
+import { ButtonComponent } from "../lib/button/button.component";
 
 const meta: Meta<ButtonComponent> = {
-  title: 'Components/Button',
-  component: ButtonComponent,
+	title: "Components/Button",
+	component: ButtonComponent,
 };
 export default meta;
 
 export const Primary: StoryObj<ButtonComponent> = {
-  args: { label: 'Click me', disabled: false },
+	args: { label: "Click me", disabled: false },
 };
 
 export const Disabled: StoryObj<ButtonComponent> = {
-  args: { label: 'Click me', disabled: true },
+	args: { label: "Click me", disabled: true },
 };
 
 export const WithOutput: StoryObj<ButtonComponent> = {
-  args: { clicked: undefined },
+	args: { clicked: undefined },
 };
 
 /**
@@ -24,5 +24,7 @@ export const WithOutput: StoryObj<ButtonComponent> = {
  * @useTemplate
  */
 export const CustomTemplate: StoryObj<ButtonComponent> = {
-  render: (args) => ({ template: `<app-button label="custom template"></app-button>` }),
+	render: (_args) => ({
+		template: `<app-button label="custom template"></app-button>`,
+	}),
 };

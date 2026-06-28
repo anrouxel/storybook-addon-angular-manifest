@@ -12,7 +12,10 @@ describe("extractComponentDescription", () => {
 	});
 
 	it("falls back to compodoc description when no meta jsdoc", () => {
-		const result = extractComponentDescription(undefined, "Compodoc description");
+		const result = extractComponentDescription(
+			undefined,
+			"Compodoc description",
+		);
 		expect(result.description).toBe("Compodoc description");
 	});
 
@@ -45,7 +48,7 @@ describe("extractComponentDescription", () => {
 			"@param {string} label The label",
 			undefined,
 		);
-		expect(result.jsDocTags["param"]).toBeDefined();
+		expect(result.jsDocTags.param).toBeDefined();
 	});
 
 	it("returns undefined description when both inputs are undefined", () => {

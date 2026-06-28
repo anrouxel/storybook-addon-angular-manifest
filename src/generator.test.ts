@@ -10,12 +10,24 @@ import { vol } from "memfs";
 import { dedent } from "ts-dedent";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { mockFindPackageJson } from "./memfs-test-setup";
+// Redirect node:fs → memfs so the generator reads from a virtual filesystem.
+// The factory form is required for node: built-ins in Vitest.
+vi.mock("node:fs", async () => {
+	const { fs } = await import("memfs");
+	return { ...fs, default: fs };
+});
+
+// Mock empathic/package to control which package.json is resolved without
+// relying on empathic's own node:fs calls (which bypass the memfs mock).
+vi.mock("empathic/package", () => ({
+	up: vi.fn(),
+}));
 
 import { invalidateCompodocCache } from "./compodocExtractor";
-import { manifest } from "./generator";
-import { invalidateCache } from "./utils";
 import { files, manifestEntries } from "./fixtures";
+import { manifest } from "./generator";
+import { mockFindPackageJson } from "./memfs-test-setup";
+import { invalidateCache } from "./utils";
 
 // ---------------------------------------------------------------------------
 // Absolute paths used inside the virtual filesystem
@@ -31,10 +43,14 @@ const COMPODOC_JSON_PATH = `${ROOT}/documentation.json`;
 // Helper — build an absolute-path volume from the fixture relative-path files
 // ---------------------------------------------------------------------------
 
-function absoluteFiles(overrides: Record<string, string> = {}): Record<string, string> {
+function absoluteFiles(
+	overrides: Record<string, string> = {},
+): Record<string, string> {
 	const result: Record<string, string> = {};
 	for (const [rel, content] of Object.entries(files)) {
-		const abs = rel.startsWith("./") ? `${ROOT}/${rel.slice(2)}` : `${ROOT}/${rel}`;
+		const abs = rel.startsWith("./")
+			? `${ROOT}/${rel.slice(2)}`
+			: `${ROOT}/${rel}`;
 		result[abs] = content;
 	}
 	return { ...result, ...overrides };
@@ -44,26 +60,25 @@ function absoluteFiles(overrides: Record<string, string> = {}): Record<string, s
 // Helper — run the generator with a virtual filesystem
 // ---------------------------------------------------------------------------
 
-async function runManifest(options: {
-	extraFiles?: Record<string, string>;
-	entries?: typeof manifestEntries;
-} = {}) {
+async function runManifest(
+	options: {
+		extraFiles?: Record<string, string>;
+		entries?: typeof manifestEntries;
+	} = {},
+) {
 	const { extraFiles = {}, entries = manifestEntries } = options;
 
 	vol.fromJSON(absoluteFiles(extraFiles));
 
-	return manifest(
-		{},
-		{
-			manifestEntries: entries,
-			watch: false,
-			configDir: ROOT,
-			outputDir: `${ROOT}/storybook-static`,
-			cacheDir: `${ROOT}/.cache`,
-			packageJson: {},
-			presets: {} as any,
-		} as any,
-	);
+	return manifest({}, {
+		manifestEntries: entries,
+		watch: false,
+		configDir: ROOT,
+		outputDir: `${ROOT}/storybook-static`,
+		cacheDir: `${ROOT}/.cache`,
+		packageJson: {},
+		presets: {} as any,
+	} as any);
 }
 
 // ---------------------------------------------------------------------------
@@ -109,7 +124,9 @@ describe("manifest generator — happy path", () => {
 		const component = Object.values(result.components.components).find(
 			(c) => c.name === "ButtonComponent",
 		);
-		expect(component?.description).toBe("Primary UI component for user interaction.");
+		expect(component?.description).toBe(
+			"Primary UI component for user interaction.",
+		);
 	});
 
 	it("resolves import specifier from the nearest package.json name", async () => {
@@ -117,7 +134,9 @@ describe("manifest generator — happy path", () => {
 		const component = Object.values(result.components.components).find(
 			(c) => c.name === "ButtonComponent",
 		);
-		expect(component?.import).toBe('import { ButtonComponent } from "@my-org/my-lib";');
+		expect(component?.import).toBe(
+			'import { ButtonComponent } from "@my-org/my-lib";',
+		);
 	});
 
 	it("uses the scoped package name in the import statement", async () => {
@@ -129,7 +148,9 @@ describe("manifest generator — happy path", () => {
 		const component = Object.values(result.components.components).find(
 			(c) => c.name === "ButtonComponent",
 		);
-		expect(component?.import).toBe('import { ButtonComponent } from "@acme/ui-components";');
+		expect(component?.import).toBe(
+			'import { ButtonComponent } from "@acme/ui-components";',
+		);
 	});
 
 	it("falls back to relative specifier when no package.json is found", async () => {
@@ -191,7 +212,9 @@ describe("manifest generator — stories", () => {
 			(c) => c.name === "ButtonComponent",
 		);
 		const custom = component?.stories.find((s) => s.name === "Custom Template");
-		expect(custom?.snippet).toBe('<app-button label="custom template"></app-button>');
+		expect(custom?.snippet).toBe(
+			'<app-button label="custom template"></app-button>',
+		);
 	});
 });
 
@@ -228,7 +251,9 @@ describe("manifest generator — LibBtnDirective (compound selector)", () => {
 		const directive = Object.values(result.components.components).find(
 			(c) => c.name === "LibBtnDirective",
 		);
-		expect(directive?.import).toBe('import { LibBtnDirective } from "@my-org/my-lib";');
+		expect(directive?.import).toBe(
+			'import { LibBtnDirective } from "@my-org/my-lib";',
+		);
 	});
 });
 
@@ -248,31 +273,35 @@ describe("manifest generator — compodoc missing", () => {
 			(c) => "error" in c,
 		);
 		expect(component?.error).toBeDefined();
-		expect(component?.error?.name).toBe("Component not found in Compodoc output");
+		expect(component?.error?.name).toBe(
+			"Component not found in Compodoc output",
+		);
 	});
 
 	it("returns an error when no compodoc file exists", async () => {
+		const buttonStories = files["./src/stories/button.stories.ts"];
+		const buttonComponent = files["./src/lib/button/button.component.ts"];
+		if (!buttonStories || !buttonComponent) throw new Error("missing fixtures");
+
 		vol.fromJSON({
-			[BUTTON_STORY_PATH]: files["./src/stories/button.stories.ts"]!,
-			[BUTTON_COMPONENT_PATH]: files["./src/lib/button/button.component.ts"]!,
+			[BUTTON_STORY_PATH]: buttonStories,
+			[BUTTON_COMPONENT_PATH]: buttonComponent,
 		});
 
 		const buttonEntry = manifestEntries.find(
 			(e) => e.importPath === "./src/stories/button.stories.ts",
-		)!;
-
-		const result = await manifest(
-			{},
-			{
-				manifestEntries: [buttonEntry],
-				watch: false,
-				configDir: ROOT,
-				outputDir: `${ROOT}/storybook-static`,
-				cacheDir: `${ROOT}/.cache`,
-				packageJson: {},
-				presets: {} as any,
-			} as any,
 		);
+		if (!buttonEntry) throw new Error("missing fixture entry");
+
+		const result = await manifest({}, {
+			manifestEntries: [buttonEntry],
+			watch: false,
+			configDir: ROOT,
+			outputDir: `${ROOT}/storybook-static`,
+			cacheDir: `${ROOT}/.cache`,
+			packageJson: {},
+			presets: {} as any,
+		} as any);
 
 		const component = Object.values(result.components.components)[0];
 		expect(component?.error).toBeDefined();

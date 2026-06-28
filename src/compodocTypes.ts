@@ -98,7 +98,11 @@ export interface Directive {
 	/** Style URLs, merging both `styleUrls` and `styleUrl` (singular, new in Compodoc 2.0). */
 	styleUrls?: string[];
 	/** Host directives applied via `hostDirectives`. */
-	hostDirectives?: Array<{ name: string; inputs?: string[]; outputs?: string[] }>;
+	hostDirectives?: Array<{
+		name: string;
+		inputs?: string[];
+		outputs?: string[];
+	}>;
 	/** Host bindings from `@HostBinding` decorators. */
 	hostBindings?: HostBinding[];
 	/** Host listeners from `@HostListener` decorators. */
