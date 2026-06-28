@@ -46,8 +46,8 @@ function getComponents(result: Awaited<ReturnType<typeof manifest>>) {
 
 const ROOT = "/project";
 const PACKAGE_JSON_PATH = `${ROOT}/package.json`;
-const BUTTON_STORY_PATH = `${ROOT}/src/stories/button.stories.ts`;
-const BUTTON_COMPONENT_PATH = `${ROOT}/src/lib/button/button.component.ts`;
+const BUTTON_STORY_PATH = `${ROOT}/src/button/button.stories.ts`;
+const BUTTON_COMPONENT_PATH = `${ROOT}/src/button/button.component.ts`;
 const COMPODOC_JSON_PATH = `${ROOT}/documentation.json`;
 
 // ---------------------------------------------------------------------------
@@ -171,7 +171,7 @@ describe("manifest generator — happy path", () => {
 			(c) => c.name === "ButtonComponent",
 		);
 		expect(component?.import).toContain("ButtonComponent");
-		expect(component?.import).toContain("../lib/button/button.component");
+		expect(component?.import).toContain("./button.component");
 	});
 
 	it("falls back to relative specifier when package.json has no name field", async () => {
@@ -184,7 +184,7 @@ describe("manifest generator — happy path", () => {
 			(c) => c.name === "ButtonComponent",
 		);
 		expect(component?.import).toContain("ButtonComponent");
-		expect(component?.import).toContain("../lib/button/button.component");
+		expect(component?.import).toContain("./button.component");
 	});
 });
 
@@ -288,8 +288,8 @@ describe("manifest generator — compodoc missing", () => {
 	});
 
 	it("returns an error when no compodoc file exists", async () => {
-		const buttonStories = files["./src/stories/button.stories.ts"];
-		const buttonComponent = files["./src/lib/button/button.component.ts"];
+		const buttonStories = files["./src/button/button.stories.ts"];
+		const buttonComponent = files["./src/button/button.component.ts"];
 		if (!buttonStories || !buttonComponent) throw new Error("missing fixtures");
 
 		vol.fromJSON({
@@ -298,7 +298,7 @@ describe("manifest generator — compodoc missing", () => {
 		});
 
 		const buttonEntry = manifestEntries.find(
-			(e) => e.importPath === "./src/stories/button.stories.ts",
+			(e) => e.importPath === "./src/button/button.stories.ts",
 		);
 		if (!buttonEntry) throw new Error("missing fixture entry");
 
@@ -329,7 +329,7 @@ describe("manifest generator — meta.component missing", () => {
 		const result = await runManifest({
 			extraFiles: { [BUTTON_STORY_PATH]: storiesWithoutComponent },
 			entries: manifestEntries.filter(
-				(e) => e.importPath === "./src/stories/button.stories.ts",
+				(e) => e.importPath === "./src/button/button.stories.ts",
 			),
 		});
 		const component = getComponents(result)[0];
