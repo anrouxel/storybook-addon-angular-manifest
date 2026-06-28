@@ -74,5 +74,5 @@
     ],
     "icon": "https://angular.io/assets/images/logos/angular/angular.svg"
   },
-  "packageManager": "pnpm@10.34.3"
+  "packageManager": "pnpm@11.9.0"
 }

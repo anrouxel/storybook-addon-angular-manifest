@@ -1,4 +1,5 @@
-onlyBuiltDependencies:
-  - '@compodoc/compodoc'
-  - esbuild
-  - lefthook
+allowBuilds:
+  esbuild: true
+  lefthook: true
+minimumReleaseAgeExclude:
+  - '@compodoc/compodoc@2.0.0'
