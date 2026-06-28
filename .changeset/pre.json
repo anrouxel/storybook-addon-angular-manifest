@@ -2,7 +2,12 @@
   "mode": "pre",
   "tag": "next",
   "initialVersions": {
-    "storybook-addon-angular-manifest": "0.0.0"
+    "storybook-addon-angular-manifest": "0.0.0",
+    "@anrouxel/storybook-addon-angular-manifest": "0.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "five-sheep-refuse",
+    "social-onions-smoke",
+    "stale-pets-appear"
+  ]
 }
