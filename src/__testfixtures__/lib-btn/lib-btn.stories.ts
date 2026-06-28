@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { Meta, StoryObj } from "@storybook/angular";
 import { LibBtnDirective } from "../lib/btn/lib-btn.directive";
 

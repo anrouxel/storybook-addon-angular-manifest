@@ -50,12 +50,14 @@
     "pathe": "^2.0.3"
   },
   "devDependencies": {
+    "@angular/core": "^22.0.4",
     "@biomejs/biome": "2.5.1",
     "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "next",
     "@commitlint/cli": "^21.1.0",
     "@commitlint/config-conventional": "^21.1.0",
     "@commitlint/types": "^21.1.0",
+    "@storybook/angular": "^10.4.6",
     "@types/node": "^26.0.1",
     "lefthook": "^2.1.9",
     "memfs": "^4.57.8",

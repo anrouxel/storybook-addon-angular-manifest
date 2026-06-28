@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { Meta, StoryObj } from "@storybook/angular";
 import { ButtonComponent } from "../lib/button/button.component";
 
