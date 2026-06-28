@@ -96,10 +96,13 @@ export function extractAngularStorySnippets(
 	const inputs = compodocData?.inputsClass ?? [];
 	const outputs = compodocData?.outputsClass ?? [];
 
-	// Parse the source file once for render-template extraction
+	// Parse the source file once for render-template extraction.
+	// csf._code may be undefined in some storybook versions; fall back to the Babel
+	// intermediate representation (_file.code) which always contains the raw source.
+	const rawCode: string = csf._code ?? (csf as any)._file?.code ?? "";
 	const sourceFile = ts.createSourceFile(
 		"story.ts",
-		csf._code ?? "",
+		rawCode,
 		ts.ScriptTarget.Latest,
 		true,
 	);
@@ -121,7 +124,7 @@ export function extractAngularStorySnippets(
 				const args = (story as any).args as Record<string, unknown> | undefined;
 
 				// @useTemplate opt-in: use render.template as snippet instead of Compodoc-generated one
-				const useTemplate = "@useTemplate" in (tags ?? {});
+				const useTemplate = "useTemplate" in (tags ?? {});
 				const renderTemplate = useTemplate
 					? extractStoryRenderTemplate(sourceFile, storyExport)
 					: undefined;

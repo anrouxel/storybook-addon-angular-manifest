@@ -32,6 +32,8 @@
     "prebuild": "node -e \"fs.rmSync('./dist', { recursive: true, force: true })\"",
     "build": "tsdown",
     "build:watch": "npm run build -- --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "check": "biome check ./src",
     "check:apply": "pnpm check --write",
     "check:apply-unsafe": "pnpm check --write --unsafe",
@@ -59,7 +61,8 @@
     "npm-run-all2": "^9.0.2",
     "storybook": "next",
     "tsdown": "^0.22.3",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   },
   "peerDependencies": {
     "storybook": "*"
