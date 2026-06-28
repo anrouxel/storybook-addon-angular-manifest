@@ -1,14 +1,21 @@
 /**
  * Shared fixture data for generator tests.
  *
- * Exports a virtual filesystem (`files`) and a pre-built story index
- * (`storyIndex`) that mirror a realistic Angular library project.
+ * Exports a virtual filesystem (`files`) built from real source files in
+ * __testfixtures__/, and a pre-built story index (`storyIndex`) that mirrors
+ * a realistic Angular library project.
  *
  * Pattern mirrors code/renderers/react/src/componentManifest/fixtures.ts
  * in the Storybook monorepo.
  */
 
-import { dedent } from "ts-dedent";
+// ?raw imports are resolved at transform time by Vitest — they never touch
+// the mocked node:fs, so they always return the actual file contents.
+import buttonComponentSource from "./__testfixtures__/button/button.component.ts?raw";
+import buttonStoriesSource from "./__testfixtures__/button/button.stories.ts?raw";
+import libBtnDirectiveSource from "./__testfixtures__/lib-btn/lib-btn.directive.ts?raw";
+import libBtnStoriesSource from "./__testfixtures__/lib-btn/lib-btn.stories.ts?raw";
+import documentationJson from "./__testfixtures__/documentation.json?raw";
 
 // ---------------------------------------------------------------------------
 // Virtual filesystem — passed to vol.fromJSON() in tests
@@ -19,157 +26,15 @@ export const files: Record<string, string> = {
 	"./package.json": JSON.stringify({ name: "@my-org/my-lib", version: "0.0.0" }),
 
 	// ── ButtonComponent ───────────────────────────────────────────────────────
-	"./src/lib/button/button.component.ts": dedent`
-    import { Component, Input, Output, EventEmitter } from '@angular/core';
+	"./src/lib/button/button.component.ts": buttonComponentSource,
+	"./src/stories/button.stories.ts": buttonStoriesSource,
 
-    /**
-     * Primary UI component for user interaction.
-     */
-    @Component({
-      selector: 'app-button',
-      standalone: true,
-      changeDetection: ChangeDetectionStrategy.OnPush,
-      template: '<button [disabled]="disabled">{{ label }}</button>',
-    })
-    export class ButtonComponent {
-      /** Text displayed inside the button. */
-      @Input() label = 'Click me';
-      /** When true the button is non-interactive. */
-      @Input() disabled = false;
-      /** Emitted when the user clicks the button. */
-      @Output() clicked = new EventEmitter<void>();
-    }
-  `,
-
-	// ── LibBtnDirective — compound/attribute selector ─────────────────────────
-	"./src/lib/btn/lib-btn.directive.ts": dedent`
-    import { Directive, Input } from '@angular/core';
-
-    /**
-     * Attaches library button styling to any host element.
-     */
-    @Directive({ selector: 'button[lib-btn], a[lib-btn]', standalone: true })
-    export class LibBtnDirective {
-      /** Visual variant of the button. */
-      @Input() variant: 'primary' | 'secondary' = 'primary';
-    }
-  `,
-
-	// ── Button stories ────────────────────────────────────────────────────────
-	"./src/stories/button.stories.ts": dedent`
-    import type { Meta, StoryObj } from '@storybook/angular';
-    import { ButtonComponent } from '../lib/button/button.component';
-
-    const meta: Meta<ButtonComponent> = {
-      title: 'Components/Button',
-      component: ButtonComponent,
-    };
-    export default meta;
-
-    export const Primary: StoryObj<ButtonComponent> = {
-      args: { label: 'Click me', disabled: false },
-    };
-
-    export const Disabled: StoryObj<ButtonComponent> = {
-      args: { label: 'Click me', disabled: true },
-    };
-
-    export const WithOutput: StoryObj<ButtonComponent> = {
-      args: { clicked: undefined },
-    };
-
-    /**
-     * Uses the raw render template instead of Compodoc snippet.
-     * @useTemplate
-     */
-    export const CustomTemplate: StoryObj<ButtonComponent> = {
-      render: (args) => ({ template: \`<app-button label="custom template"></app-button>\` }),
-    };
-  `,
-
-	// ── LibBtn directive stories ───────────────────────────────────────────────
-	"./src/stories/lib-btn.stories.ts": dedent`
-    import type { Meta, StoryObj } from '@storybook/angular';
-    import { LibBtnDirective } from '../lib/btn/lib-btn.directive';
-
-    const meta: Meta<LibBtnDirective> = {
-      title: 'Directives/LibBtn',
-      component: LibBtnDirective,
-    };
-    export default meta;
-
-    export const Primary: StoryObj<LibBtnDirective> = {};
-
-    export const Secondary: StoryObj<LibBtnDirective> = {
-      args: { variant: 'secondary' },
-    };
-  `,
+	// ── LibBtnDirective ───────────────────────────────────────────────────────
+	"./src/lib/btn/lib-btn.directive.ts": libBtnDirectiveSource,
+	"./src/stories/lib-btn.stories.ts": libBtnStoriesSource,
 
 	// ── Compodoc JSON ─────────────────────────────────────────────────────────
-	"./documentation.json": JSON.stringify({
-		components: [
-			{
-				name: "ButtonComponent",
-				type: "component",
-				selector: "app-button",
-				standalone: true,
-				changeDetection: "ChangeDetectionStrategy.OnPush",
-				description: "Primary UI component for user interaction.",
-				rawdescription: "Primary UI component for user interaction.",
-				inputsClass: [
-					{
-						name: "label",
-						type: "string",
-						optional: true,
-						defaultValue: "'Click me'",
-						description: "Text displayed inside the button.",
-					},
-					{
-						name: "disabled",
-						type: "boolean",
-						optional: true,
-						defaultValue: "false",
-						description: "When true the button is non-interactive.",
-					},
-				],
-				outputsClass: [
-					{
-						name: "clicked",
-						type: "EventEmitter<void>",
-						optional: true,
-						description: "Emitted when the user clicks the button.",
-					},
-				],
-				propertiesClass: [],
-				methodsClass: [],
-			},
-		],
-		directives: [
-			{
-				name: "LibBtnDirective",
-				type: "directive",
-				selector: "button[lib-btn], a[lib-btn]",
-				standalone: true,
-				description: "Attaches library button styling to any host element.",
-				rawdescription: "Attaches library button styling to any host element.",
-				inputsClass: [
-					{
-						name: "variant",
-						type: '"primary" | "secondary"',
-						optional: true,
-						defaultValue: "'primary'",
-						description: "Visual variant of the button.",
-					},
-				],
-				outputsClass: [],
-				propertiesClass: [],
-				methodsClass: [],
-			},
-		],
-		pipes: [],
-		injectables: [],
-		classes: [],
-	}),
+	"./documentation.json": documentationJson,
 };
 
 // ---------------------------------------------------------------------------

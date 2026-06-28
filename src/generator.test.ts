@@ -10,26 +10,12 @@ import { vol } from "memfs";
 import { dedent } from "ts-dedent";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Redirect node:fs → memfs so the generator reads from a virtual filesystem.
-// The factory form is required for node: built-ins in vitest.
-vi.mock("node:fs", async () => {
-	const { fs } = await import("memfs");
-	return { ...fs, default: fs };
-});
+import { mockFindPackageJson } from "./memfs-test-setup";
 
-// Mock empathic/package so we can control which package.json is found
-// without relying on empathic's own node:fs imports (which bypass our mock).
-vi.mock("empathic/package", () => ({
-	up: vi.fn(),
-}));
-
-import { up as findPackageJson } from "empathic/package";
 import { invalidateCompodocCache } from "./compodocExtractor";
 import { manifest } from "./generator";
 import { invalidateCache } from "./utils";
 import { files, manifestEntries } from "./fixtures";
-
-const mockFindPackageJson = vi.mocked(findPackageJson);
 
 // ---------------------------------------------------------------------------
 // Absolute paths used inside the virtual filesystem
@@ -39,7 +25,6 @@ const ROOT = "/project";
 const PACKAGE_JSON_PATH = `${ROOT}/package.json`;
 const BUTTON_STORY_PATH = `${ROOT}/src/stories/button.stories.ts`;
 const BUTTON_COMPONENT_PATH = `${ROOT}/src/lib/button/button.component.ts`;
-const LIB_BTN_DIRECTIVE_PATH = `${ROOT}/src/lib/btn/lib-btn.directive.ts`;
 const COMPODOC_JSON_PATH = `${ROOT}/documentation.json`;
 
 // ---------------------------------------------------------------------------
@@ -233,7 +218,7 @@ describe("manifest generator — LibBtnDirective (compound selector)", () => {
 			(c) => c.name === "LibBtnDirective",
 		);
 		const primary = directive?.stories.find((s) => s.name === "Primary");
-expect(primary?.snippets).toHaveLength(2);
+		expect(primary?.snippets).toHaveLength(2);
 		expect(primary?.snippets?.[0]).toBe("<button lib-btn></button>");
 		expect(primary?.snippets?.[1]).toBe("<a lib-btn></a>");
 	});
@@ -267,7 +252,6 @@ describe("manifest generator — compodoc missing", () => {
 	});
 
 	it("returns an error when no compodoc file exists", async () => {
-		// Mount only story + component files — no documentation.json
 		vol.fromJSON({
 			[BUTTON_STORY_PATH]: files["./src/stories/button.stories.ts"]!,
 			[BUTTON_COMPONENT_PATH]: files["./src/lib/button/button.component.ts"]!,
