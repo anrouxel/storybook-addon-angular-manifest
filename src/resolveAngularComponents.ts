@@ -95,6 +95,14 @@ export function extractAngularStorySnippets(
 	const selector = (compodocData as any)?.selector as string | undefined;
 	const inputs = compodocData?.inputsClass ?? [];
 
+	// Parse the source file once for render-template extraction
+	const sourceFile = ts.createSourceFile(
+		"story.ts",
+		csf._code ?? "",
+		ts.ScriptTarget.Latest,
+		true,
+	);
+
 	return Object.entries(csf._stories)
 		.filter(([, story]) => !filterStoryIds || filterStoryIds.has(story.id))
 		.map(([storyExport, story]): ResolvedAngularStoryEntry => {
@@ -110,7 +118,12 @@ export function extractAngularStorySnippets(
 					(tags?.describe?.[0] || tags?.desc?.[0]) ?? description;
 
 				const args = (story as any).args as Record<string, unknown> | undefined;
-				const snippets = buildAngularSnippets(selector, inputs, args);
+
+				// Story-defined render template takes priority over the auto-generated snippet
+				const renderTemplate = extractStoryRenderTemplate(sourceFile, storyExport);
+				const snippets = renderTemplate
+					? [renderTemplate]
+					: buildAngularSnippets(selector, inputs, args);
 				const snippet = snippets?.[0];
 
 				return {
@@ -130,6 +143,101 @@ export function extractAngularStorySnippets(
 				};
 			}
 		});
+}
+
+// ---------------------------------------------------------------------------
+// Story render template extraction
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the Angular `template` string from a story's `render` function via TypeScript AST.
+ *
+ * Handles the two common forms:
+ *   - Arrow function with parenthesised object: `render: (args) => ({ template: \`...\` })`
+ *   - Arrow function with block body:           `render: (args) => { return { template: \`...\` }; }`
+ *
+ * Returns `undefined` when the story has no `render`, or `render` does not return a `template`.
+ */
+export function extractStoryRenderTemplate(
+	sourceFile: ts.SourceFile,
+	storyExportName: string,
+): string | undefined {
+	for (const statement of sourceFile.statements) {
+		if (!ts.isVariableStatement(statement)) continue;
+
+		const decl = statement.declarationList.declarations.find(
+			(d) => ts.isIdentifier(d.name) && (d.name as ts.Identifier).text === storyExportName,
+		);
+		if (!decl?.initializer || !ts.isObjectLiteralExpression(decl.initializer))
+			continue;
+
+		const renderProp = decl.initializer.properties.find(
+			(p): p is ts.PropertyAssignment =>
+				ts.isPropertyAssignment(p) &&
+				ts.isIdentifier(p.name) &&
+				(p.name as ts.Identifier).text === "render",
+		);
+		if (!renderProp) continue;
+
+		const fn = renderProp.initializer;
+		if (!ts.isArrowFunction(fn) && !ts.isFunctionExpression(fn)) continue;
+
+		const returnObj = resolveRenderReturnObject(fn);
+		if (!returnObj) continue;
+
+		const templateProp = returnObj.properties.find(
+			(p): p is ts.PropertyAssignment =>
+				ts.isPropertyAssignment(p) &&
+				ts.isIdentifier(p.name) &&
+				(p.name as ts.Identifier).text === "template",
+		);
+		if (!templateProp) continue;
+
+		return extractStringLiteralText(templateProp.initializer, sourceFile);
+	}
+
+	return undefined;
+}
+
+function resolveRenderReturnObject(
+	fn: ts.ArrowFunction | ts.FunctionExpression,
+): ts.ObjectLiteralExpression | undefined {
+	const body = fn.body;
+
+	// `(args) => ({ template: ... })`
+	if (ts.isParenthesizedExpression(body)) {
+		const inner = (body as ts.ParenthesizedExpression).expression;
+		if (ts.isObjectLiteralExpression(inner)) return inner;
+	}
+
+	// `(args) => ({ template: ... })` without parens (rare but valid)
+	if (ts.isObjectLiteralExpression(body)) return body;
+
+	// `(args) => { return { template: ... }; }`
+	if (ts.isBlock(body)) {
+		for (const stmt of body.statements) {
+			if (!ts.isReturnStatement(stmt) || !stmt.expression) continue;
+			let expr: ts.Expression = stmt.expression;
+			if (ts.isParenthesizedExpression(expr)) expr = expr.expression;
+			if (ts.isObjectLiteralExpression(expr)) return expr;
+		}
+	}
+
+	return undefined;
+}
+
+function extractStringLiteralText(
+	node: ts.Expression,
+	sourceFile: ts.SourceFile,
+): string | undefined {
+	if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+		return node.text;
+	}
+	if (ts.isTemplateExpression(node)) {
+		// Template literal with interpolations – return the raw source as-is
+		return node.getText(sourceFile);
+	}
+	return undefined;
 }
 
 // ---------------------------------------------------------------------------
