@@ -16,9 +16,13 @@ export interface JsDocTag {
 
 export interface Property {
 	name: string;
+	/** Original property name when a signal alias overrides `name`. */
+	actualName?: string;
 	decorators?: Decorator[];
 	type: string;
 	optional: boolean;
+	/** `true` for `input.required<T>()` signals. */
+	required?: boolean;
 	defaultValue?: string;
 	description?: string;
 	rawdescription?: string;
@@ -38,6 +42,8 @@ export interface Class {
 export interface Injectable {
 	name: string;
 	type: "injectable";
+	/** Injectable scope, e.g. `"root"` or `"platform"`. New in Compodoc 2.0. */
+	providedIn?: string;
 	properties: Property[];
 	methods: Method[];
 	description?: string;
@@ -47,6 +53,8 @@ export interface Injectable {
 export interface Pipe {
 	name: string;
 	type: "class";
+	/** `true` for standalone pipes. New in Compodoc 2.0. */
+	standalone?: boolean;
 	properties: Property[];
 	methods: Method[];
 	description?: string;
@@ -56,8 +64,10 @@ export interface Pipe {
 export interface Directive {
 	name: string;
 	type: "directive" | "component";
-	/** Angular CSS selector, e.g. `"app-button"`. Present on components and directives. */
+	/** Angular CSS selector, e.g. `"app-button"`. */
 	selector?: string;
+	/** `true` for standalone components/directives. New in Compodoc 2.0. */
+	standalone?: boolean;
 	propertiesClass: Property[];
 	inputsClass: Property[];
 	outputsClass: Property[];

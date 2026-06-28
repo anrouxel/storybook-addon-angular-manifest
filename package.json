@@ -70,7 +70,8 @@
   "storybook": {
     "displayName": "Storybook Addon Angular Manifest",
     "supportedFrameworks": [
-      "angular"
+      "angular",
+      "angular-vite"
     ],
     "icon": "https://angular.io/assets/images/logos/angular/angular.svg"
   },

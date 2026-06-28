@@ -20,6 +20,8 @@ import type {
  */
 export interface AngularComponentManifest extends ComponentManifest {
 	compodoc?: Component | Directive;
+	/** `true` when the component/directive is declared as standalone (Compodoc 2.0). */
+	standalone?: boolean;
 	[key: string]: unknown;
 }
 
@@ -70,6 +72,7 @@ export function buildAngularComponentManifest({
 	const stories: ResolvedAngularStoryEntry[] = extractAngularStorySnippets(
 		csf,
 		compodocData as Component | Directive | undefined,
+		componentName,
 		filterStoryIds,
 	);
 
@@ -115,5 +118,6 @@ export function buildAngularComponentManifest({
 		summary,
 		jsDocTags,
 		compodoc: compodocData as Component | Directive,
+		standalone: (compodocData as Directive | undefined)?.standalone,
 	};
 }

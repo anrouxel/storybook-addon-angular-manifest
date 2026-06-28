@@ -82,12 +82,11 @@ export async function resolveAngularStoryComponent(options: {
 export function extractAngularStorySnippets(
 	csf: ParsedCsf,
 	compodocData: Component | Directive | null | undefined,
+	componentName: string | undefined,
 	filterStoryIds?: ReadonlySet<string>,
 ): ResolvedAngularStoryEntry[] {
 	const selector = (compodocData as any)?.selector as string | undefined;
-	const inputNames = new Set(
-		(compodocData?.inputsClass ?? []).map((i) => i.name),
-	);
+	const inputs = compodocData?.inputsClass ?? [];
 
 	return Object.entries(csf._stories)
 		.filter(([, story]) => !filterStoryIds || filterStoryIds.has(story.id))
@@ -104,7 +103,7 @@ export function extractAngularStorySnippets(
 					(tags?.describe?.[0] || tags?.desc?.[0]) ?? description;
 
 				const args = (story as any).args as Record<string, unknown> | undefined;
-				const snippet = buildAngularSnippet(selector, inputNames, args);
+				const snippet = buildAngularSnippet(selector, componentName, inputs, args);
 
 				return {
 					id: story.id,
@@ -125,35 +124,63 @@ export function extractAngularStorySnippets(
 }
 
 /**
+ * Derive a CSS selector from a PascalCase component class name when Compodoc
+ * doesn't provide one (e.g. `ButtonComponent` → `app-button`).
+ */
+export function selectorFromClassName(className: string): string {
+	return `app-${className
+		.replace(/Component$|Directive$/, "")
+		.replace(/([A-Z])/g, (m, l, i) => (i === 0 ? l : `-${l}`))
+		.toLowerCase()}`;
+}
+
+/**
  * Generate a minimal Angular template snippet for a story, suitable for the manifest.
  *
- * Uses the component's selector and binds story `args` that match declared `@Input()` properties.
+ * Uses the component's selector (or a PascalCase fallback) and binds story `args`
+ * that match declared `@Input()` properties. Signal inputs with `required: true`
+ * are always included even when absent from `args`.
  */
 function buildAngularSnippet(
 	selector: string | undefined,
-	inputNames: Set<string>,
+	componentName: string | undefined,
+	inputs: import("./compodocTypes").Property[],
 	args: Record<string, unknown> | undefined,
 ): string | undefined {
-	if (!selector) {
+	const tag =
+		selector ?? (componentName ? selectorFromClassName(componentName) : undefined);
+	if (!tag) {
 		return undefined;
 	}
 
-	const bindings = args
-		? Object.entries(args)
-				.filter(([key]) => inputNames.has(key))
-				.map(([key, value]) => {
-					if (typeof value === "string") {
-						return `${key}="${value}"`;
-					}
-					return `[${key}]="${JSON.stringify(value)}"`;
-				})
-		: [];
+	// Build a lookup from the public name (alias or property name) → Property
+	const inputByName = new Map(inputs.map((i) => [i.name, i]));
 
-	if (bindings.length === 0) {
-		return `<${selector}></${selector}>`;
+	const bindings: string[] = [];
+
+	// Required signal inputs get a placeholder even when not in args
+	for (const input of inputs) {
+		if (input.required && !(args && input.name in args)) {
+			bindings.push(`[${input.name}]="/* required */"`);
+		}
 	}
 
-	return `<${selector} ${bindings.join(" ")}></${selector}>`;
+	if (args) {
+		for (const [key, value] of Object.entries(args)) {
+			if (!inputByName.has(key)) continue;
+			if (typeof value === "string") {
+				bindings.push(`${key}="${value}"`);
+			} else {
+				bindings.push(`[${key}]="${JSON.stringify(value)}"`);
+			}
+		}
+	}
+
+	if (bindings.length === 0) {
+		return `<${tag}></${tag}>`;
+	}
+
+	return `<${tag} ${bindings.join(" ")}></${tag}>`;
 }
 
 // ---------------------------------------------------------------------------
