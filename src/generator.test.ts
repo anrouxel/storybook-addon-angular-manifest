@@ -17,9 +17,18 @@ vi.mock("node:fs", async () => {
 	return { ...fs, default: fs };
 });
 
+// Mock empathic/package so we can control which package.json is found
+// without relying on empathic's own node:fs imports (which bypass our mock).
+vi.mock("empathic/package", () => ({
+	up: vi.fn(),
+}));
+
+import { up as findPackageJson } from "empathic/package";
 import { invalidateCompodocCache } from "./compodocExtractor";
 import { manifest } from "./generator";
 import { invalidateCache } from "./utils";
+
+const mockFindPackageJson = vi.mocked(findPackageJson);
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -159,6 +168,8 @@ beforeEach(() => {
 	invalidateCache();
 	invalidateCompodocCache();
 	vi.spyOn(process, "cwd").mockReturnValue("/project");
+	// By default, simulate finding the project package.json with a scoped name
+	mockFindPackageJson.mockReturnValue(PACKAGE_JSON_PATH);
 });
 
 describe("manifest generator — happy path", () => {
@@ -187,14 +198,39 @@ describe("manifest generator — happy path", () => {
 		expect(component?.description).toBe("A reusable button component.");
 	});
 
-	it("generates an import statement for the component", async () => {
+	it("resolves import specifier from the nearest package.json name", async () => {
 		const result = await runManifest({});
 		const component = Object.values(result.components.components)[0];
-		// The exact specifier depends on empathic's package.json traversal.
-		// We verify the shape of the import rather than the specifier source,
-		// as the package.json resolution is tested separately in unit tests.
+		expect(component?.import).toBe('import { ButtonComponent } from "@my-org/my-lib";');
+	});
+
+	it("uses the scoped package name in the import statement", async () => {
+		const result = await runManifest({
+			extraFiles: {
+				[PACKAGE_JSON_PATH]: JSON.stringify({ name: "@acme/ui-components" }),
+			},
+		});
+		const component = Object.values(result.components.components)[0];
+		expect(component?.import).toBe('import { ButtonComponent } from "@acme/ui-components";');
+	});
+
+	it("falls back to relative specifier when no package.json is found", async () => {
+		mockFindPackageJson.mockReturnValue(undefined);
+		const result = await runManifest({});
+		const component = Object.values(result.components.components)[0];
 		expect(component?.import).toContain("ButtonComponent");
-		expect(component?.import).toContain("import {");
+		expect(component?.import).toContain("../lib/button/button.component");
+	});
+
+	it("falls back to relative specifier when package.json has no name field", async () => {
+		const result = await runManifest({
+			extraFiles: {
+				[PACKAGE_JSON_PATH]: JSON.stringify({ version: "1.0.0" }),
+			},
+		});
+		const component = Object.values(result.components.components)[0];
+		expect(component?.import).toContain("ButtonComponent");
+		expect(component?.import).toContain("../lib/button/button.component");
 	});
 });
 
