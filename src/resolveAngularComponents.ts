@@ -94,6 +94,7 @@ export function extractAngularStorySnippets(
 ): ResolvedAngularStoryEntry[] {
 	const selector = (compodocData as any)?.selector as string | undefined;
 	const inputs = compodocData?.inputsClass ?? [];
+	const outputs = compodocData?.outputsClass ?? [];
 
 	// Parse the source file once for render-template extraction
 	const sourceFile = ts.createSourceFile(
@@ -126,7 +127,7 @@ export function extractAngularStorySnippets(
 					: undefined;
 				const snippets = renderTemplate
 					? [renderTemplate]
-					: buildAngularSnippets(selector, inputs, args);
+					: buildAngularSnippets(selector, inputs, outputs, args);
 				const snippet = snippets?.[0];
 
 				return {
@@ -279,18 +280,28 @@ function parseSelectorPart(part: string): ParsedSelectorPart {
 }
 
 /**
- * Build the attribute bindings string for Angular inputs.
+ * Build the attribute bindings string for Angular inputs and outputs.
  *
- * - Signal `input.required()` inputs get a placeholder when missing from `args`.
- * - Uses the public name (alias) from Compodoc, not `actualName`.
+ * Inputs:
+ * - `boolean true`  → bare attribute `disabled` (truthy shorthand)
+ * - `boolean false` → property binding `[disabled]="false"`
+ * - `string`        → plain attribute  `label="Click me"`
+ * - other           → property binding `[count]="42"`
+ * - `required` signal with no arg value → placeholder `[name]="/* required *&#47;"`
+ *
+ * Outputs (from `outputsClass`):
+ * - Always rendered as `(eventName)="handleEvent($event)"`
  */
 function buildBindings(
 	inputs: import("./compodocTypes").Property[],
+	outputs: import("./compodocTypes").Property[],
 	args: Record<string, unknown> | undefined,
 ): string[] {
 	const inputByName = new Map(inputs.map((i) => [i.name, i]));
+	const outputNames = new Set(outputs.map((o) => o.name));
 	const bindings: string[] = [];
 
+	// Required signal inputs with no provided arg value
 	for (const input of inputs) {
 		if (input.required && !(args && input.name in args)) {
 			bindings.push(`[${input.name}]="/* required */"`);
@@ -299,11 +310,19 @@ function buildBindings(
 
 	if (args) {
 		for (const [key, value] of Object.entries(args)) {
-			if (!inputByName.has(key)) continue;
-			if (typeof value === "string") {
-				bindings.push(`${key}="${value}"`);
-			} else {
-				bindings.push(`[${key}]="${JSON.stringify(value)}"`);
+			if (outputNames.has(key)) {
+				// Output binding — ignore the arg value, just show the event binding syntax
+				bindings.push(`(${key})="handleEvent($event)"`);
+			} else if (inputByName.has(key)) {
+				if (value === true) {
+					bindings.push(key);
+				} else if (value === false) {
+					bindings.push(`[${key}]="false"`);
+				} else if (typeof value === "string") {
+					bindings.push(`${key}="${value}"`);
+				} else {
+					bindings.push(`[${key}]="${JSON.stringify(value)}"`);
+				}
 			}
 		}
 	}
@@ -345,13 +364,14 @@ function renderSnippet(
 function buildAngularSnippets(
 	selector: string | undefined,
 	inputs: import("./compodocTypes").Property[],
+	outputs: import("./compodocTypes").Property[],
 	args: Record<string, unknown> | undefined,
 ): string[] | undefined {
 	if (!selector) {
 		return undefined;
 	}
 
-	const bindings = buildBindings(inputs, args);
+	const bindings = buildBindings(inputs, outputs, args);
 
 	return selector
 		.split(",")

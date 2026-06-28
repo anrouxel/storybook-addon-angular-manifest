@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { up as findPackageJson } from "empathic/package";
 import { getComponentIdFromEntry } from "storybook/internal/common";
 import { extractDescription } from "storybook/internal/csf-tools";
 import type { ComponentManifest, IndexEntry } from "storybook/internal/types";
@@ -30,15 +32,41 @@ export interface AngularComponentManifest extends ComponentManifest {
 	[key: string]: unknown;
 }
 
+/**
+ * Resolve the best import specifier for a component: the nearest package.json `name` field
+ * when the component lives inside a published package, or the raw story-relative specifier.
+ */
+function resolveImportSpecifier(
+	component: AngularComponentRef | undefined,
+): string | undefined {
+	if (!component?.importSpecifier) return undefined;
+
+	if (component.path) {
+		const pkgJsonPath = findPackageJson({ cwd: component.path });
+		if (pkgJsonPath) {
+			try {
+				const pkg = JSON.parse(readFileSync(pkgJsonPath, "utf8")) as {
+					name?: string;
+				};
+				if (pkg.name) return pkg.name;
+			} catch {
+				// fall through to raw specifier
+			}
+		}
+	}
+
+	return component.importSpecifier;
+}
+
 /** Build an import statement string for the component. */
 function buildImportStatement(
 	componentName: string | undefined,
 	component: AngularComponentRef | undefined,
 ): string {
-	if (!componentName || !component?.importSpecifier) {
-		return "";
-	}
-	return `import { ${componentName} } from "${component.importSpecifier}";`;
+	if (!componentName) return "";
+	const specifier = resolveImportSpecifier(component);
+	if (!specifier) return "";
+	return `import { ${componentName} } from "${specifier}";`;
 }
 
 /**
