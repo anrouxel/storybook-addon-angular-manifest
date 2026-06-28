@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { up as findPackageJson } from "empathic/package";
 import { getComponentIdFromEntry } from "storybook/internal/common";
 import { extractDescription } from "storybook/internal/csf-tools";
 import type { ComponentManifest, IndexEntry } from "storybook/internal/types";
@@ -15,12 +17,47 @@ import type {
 /**
  * Angular component manifest with Compodoc-specific docgen data attached.
  *
- * Extends the base `ComponentManifest` with the raw Compodoc component entry so that consumers
- * (e.g. the HTML debugger) can render Angular-specific documentation.
+ * Extends the base `ComponentManifest` with Angular-specific metadata from Compodoc 2.0
+ * so that consumers (e.g. the HTML debugger, AI tools) can render rich documentation.
  */
 export interface AngularComponentManifest extends ComponentManifest {
+	/** Full Compodoc component/directive entry. */
 	compodoc?: Component | Directive;
+	/** `true` for standalone components/directives/pipes (Compodoc 2.0). */
+	standalone?: boolean;
+	/** Change detection strategy, e.g. `"ChangeDetectionStrategy.OnPush"`. */
+	changeDetection?: string;
+	/** Raw Angular selector, e.g. `"button[lib-btn], a[lib-btn]"`. */
+	selector?: string;
+	/** Angular story entries with optional multi-snippet support. */
+	stories: ResolvedAngularStoryEntry[];
 	[key: string]: unknown;
+}
+
+/**
+ * Resolve the best import specifier for a component: the nearest package.json `name` field
+ * when the component lives inside a published package, or the raw story-relative specifier.
+ */
+function resolveImportSpecifier(
+	component: AngularComponentRef | undefined,
+): string | undefined {
+	if (!component?.importSpecifier) return undefined;
+
+	if (component.path) {
+		const pkgJsonPath = findPackageJson({ cwd: component.path });
+		if (pkgJsonPath) {
+			try {
+				const pkg = JSON.parse(readFileSync(pkgJsonPath, "utf8")) as {
+					name?: string;
+				};
+				if (pkg.name) return pkg.name;
+			} catch {
+				// fall through to raw specifier
+			}
+		}
+	}
+
+	return component.importSpecifier;
 }
 
 /** Build an import statement string for the component. */
@@ -28,10 +65,10 @@ function buildImportStatement(
 	componentName: string | undefined,
 	component: AngularComponentRef | undefined,
 ): string {
-	if (!componentName || !component?.importSpecifier) {
-		return "";
-	}
-	return `import { ${componentName} } from "${component.importSpecifier}";`;
+	if (!componentName) return "";
+	const specifier = resolveImportSpecifier(component);
+	if (!specifier) return "";
+	return `import { ${componentName} } from "${specifier}";`;
 }
 
 /**
@@ -59,7 +96,8 @@ export function buildAngularComponentManifest({
 	filterStoryIds?: ReadonlySet<string>;
 }): AngularComponentManifest {
 	const id = getComponentIdFromEntry(entry);
-	const title = entry.title.split("/").at(-1)!.replace(/\s+/g, "");
+	const title =
+		entry.title.split("/").at(-1)?.replace(/\s+/g, "") ?? entry.title;
 	const name = componentName ?? title;
 
 	const compodocData =
@@ -70,6 +108,7 @@ export function buildAngularComponentManifest({
 	const stories: ResolvedAngularStoryEntry[] = extractAngularStorySnippets(
 		csf,
 		compodocData as Component | Directive | undefined,
+		componentName,
 		filterStoryIds,
 	);
 
@@ -109,11 +148,16 @@ export function buildAngularComponentManifest({
 		compodocDescription,
 	);
 
+	const dir = compodocData as Directive | undefined;
+
 	return {
 		...base,
 		description,
 		summary,
 		jsDocTags,
 		compodoc: compodocData as Component | Directive,
+		standalone: dir?.standalone,
+		changeDetection: dir?.changeDetection,
+		selector: dir?.selector,
 	};
 }

@@ -33,7 +33,14 @@ export interface ResolvedAngularStory {
 export interface ResolvedAngularStoryEntry {
 	id: string;
 	name: string;
+	/** Primary snippet (first selector variant). */
 	snippet?: string;
+	/**
+	 * One snippet per selector variant when the Angular selector contains multiple
+	 * comma-separated parts (e.g. `"button[lib-btn], a[lib-btn]"`).
+	 * Always populated when `snippet` is defined.
+	 */
+	snippets?: string[];
 	description?: string;
 	summary?: string;
 	error?: { name: string; message: string };
@@ -82,11 +89,22 @@ export async function resolveAngularStoryComponent(options: {
 export function extractAngularStorySnippets(
 	csf: ParsedCsf,
 	compodocData: Component | Directive | null | undefined,
+	_componentName: string | undefined,
 	filterStoryIds?: ReadonlySet<string>,
 ): ResolvedAngularStoryEntry[] {
 	const selector = (compodocData as any)?.selector as string | undefined;
-	const inputNames = new Set(
-		(compodocData?.inputsClass ?? []).map((i) => i.name),
+	const inputs = compodocData?.inputsClass ?? [];
+	const outputs = compodocData?.outputsClass ?? [];
+
+	// Parse the source file once for render-template extraction.
+	// csf._code may be undefined in some storybook versions; fall back to the Babel
+	// intermediate representation (_file.code) which always contains the raw source.
+	const rawCode: string = (csf as any)._code ?? (csf as any)._file?.code ?? "";
+	const sourceFile = ts.createSourceFile(
+		"story.ts",
+		rawCode,
+		ts.ScriptTarget.Latest,
+		true,
 	);
 
 	return Object.entries(csf._stories)
@@ -104,12 +122,22 @@ export function extractAngularStorySnippets(
 					(tags?.describe?.[0] || tags?.desc?.[0]) ?? description;
 
 				const args = (story as any).args as Record<string, unknown> | undefined;
-				const snippet = buildAngularSnippet(selector, inputNames, args);
+
+				// @useTemplate opt-in: use render.template as snippet instead of Compodoc-generated one
+				const useTemplate = "useTemplate" in (tags ?? {});
+				const renderTemplate = useTemplate
+					? extractStoryRenderTemplate(sourceFile, storyExport)
+					: undefined;
+				const snippets = renderTemplate
+					? [renderTemplate]
+					: buildAngularSnippets(selector, inputs, outputs, args);
+				const snippet = snippets?.[0];
 
 				return {
 					id: story.id,
 					name,
 					snippet,
+					snippets: snippets?.length ? snippets : undefined,
 					description: finalDescription?.trim(),
 					summary: tags.summary?.[0],
 				};
@@ -124,36 +152,233 @@ export function extractAngularStorySnippets(
 		});
 }
 
+// ---------------------------------------------------------------------------
+// Story render template extraction
+// ---------------------------------------------------------------------------
+
 /**
- * Generate a minimal Angular template snippet for a story, suitable for the manifest.
+ * Extract the Angular `template` string from a story's `render` function via TypeScript AST.
  *
- * Uses the component's selector and binds story `args` that match declared `@Input()` properties.
+ * Handles the two common forms:
+ *   - Arrow function with parenthesised object: `render: (args) => ({ template: \`...\` })`
+ *   - Arrow function with block body:           `render: (args) => { return { template: \`...\` }; }`
+ *
+ * Returns `undefined` when the story has no `render`, or `render` does not return a `template`.
  */
-function buildAngularSnippet(
-	selector: string | undefined,
-	inputNames: Set<string>,
-	args: Record<string, unknown> | undefined,
+export function extractStoryRenderTemplate(
+	sourceFile: ts.SourceFile,
+	storyExportName: string,
 ): string | undefined {
+	for (const statement of sourceFile.statements) {
+		if (!ts.isVariableStatement(statement)) continue;
+
+		const decl = statement.declarationList.declarations.find(
+			(d) =>
+				ts.isIdentifier(d.name) &&
+				(d.name as ts.Identifier).text === storyExportName,
+		);
+		if (!decl?.initializer || !ts.isObjectLiteralExpression(decl.initializer))
+			continue;
+
+		const renderProp = decl.initializer.properties.find(
+			(p): p is ts.PropertyAssignment =>
+				ts.isPropertyAssignment(p) &&
+				ts.isIdentifier(p.name) &&
+				(p.name as ts.Identifier).text === "render",
+		);
+		if (!renderProp) continue;
+
+		const fn = renderProp.initializer;
+		if (!ts.isArrowFunction(fn) && !ts.isFunctionExpression(fn)) continue;
+
+		const returnObj = resolveRenderReturnObject(fn);
+		if (!returnObj) continue;
+
+		const templateProp = returnObj.properties.find(
+			(p): p is ts.PropertyAssignment =>
+				ts.isPropertyAssignment(p) &&
+				ts.isIdentifier(p.name) &&
+				(p.name as ts.Identifier).text === "template",
+		);
+		if (!templateProp) continue;
+
+		return extractStringLiteralText(templateProp.initializer, sourceFile);
+	}
+
+	return undefined;
+}
+
+function resolveRenderReturnObject(
+	fn: ts.ArrowFunction | ts.FunctionExpression,
+): ts.ObjectLiteralExpression | undefined {
+	const body = fn.body;
+
+	// `(args) => ({ template: ... })`
+	if (ts.isParenthesizedExpression(body)) {
+		const inner = (body as ts.ParenthesizedExpression).expression;
+		if (ts.isObjectLiteralExpression(inner)) return inner;
+	}
+
+	// `(args) => ({ template: ... })` without parens (rare but valid)
+	if (ts.isObjectLiteralExpression(body)) return body;
+
+	// `(args) => { return { template: ... }; }`
+	if (ts.isBlock(body)) {
+		for (const stmt of body.statements) {
+			if (!ts.isReturnStatement(stmt) || !stmt.expression) continue;
+			let expr: ts.Expression = stmt.expression;
+			if (ts.isParenthesizedExpression(expr)) expr = expr.expression;
+			if (ts.isObjectLiteralExpression(expr)) return expr;
+		}
+	}
+
+	return undefined;
+}
+
+function extractStringLiteralText(
+	node: ts.Expression,
+	sourceFile: ts.SourceFile,
+): string | undefined {
+	if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+		return node.text;
+	}
+	if (ts.isTemplateExpression(node)) {
+		// Template literal with interpolations – return the raw source as-is
+		return node.getText(sourceFile);
+	}
+	return undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Angular selector parsing
+// ---------------------------------------------------------------------------
+
+/**
+ * Parsed representation of one part of an Angular CSS selector.
+ *
+ * Examples:
+ *   `app-button`        → { element: 'app-button', attributes: [] }
+ *   `[lib-btn]`         → { element: undefined,    attributes: ['lib-btn'] }
+ *   `button[lib-btn]`   → { element: 'button',     attributes: ['lib-btn'] }
+ */
+interface ParsedSelectorPart {
+	element: string | undefined;
+	attributes: string[];
+}
+
+/**
+ * Parse a single Angular selector part (no comma) into its element + attribute parts.
+ * Ignores pseudo-classes, class selectors, and everything we don't need for snippets.
+ */
+function parseSelectorPart(part: string): ParsedSelectorPart {
+	const trimmed = part.trim();
+
+	// Extract all attribute selectors [attr] or [attr=val]
+	const attrMatches = [...trimmed.matchAll(/\[([^\]=]+)(?:=[^\]]+)?\]/g)];
+	const attributes = attrMatches.map((m) => m[1]?.trim() ?? "");
+
+	// The element tag is everything before the first [ or . or :
+	const elementMatch = trimmed.match(/^([a-z][\w-]*)/i);
+	const element = elementMatch?.[1];
+
+	return { element, attributes };
+}
+
+/**
+ * Build the attribute bindings string for Angular inputs and outputs.
+ *
+ * Inputs:
+ * - `boolean true`  → bare attribute `disabled` (truthy shorthand)
+ * - `boolean false` → property binding `[disabled]="false"`
+ * - `string`        → plain attribute  `label="Click me"`
+ * - other           → property binding `[count]="42"`
+ * - `required` signal with no arg value → placeholder `[name]="/* required *&#47;"`
+ *
+ * Outputs (from `outputsClass`):
+ * - Always rendered as `(eventName)="handleEvent($event)"`
+ */
+function buildBindings(
+	inputs: import("./compodocTypes").Property[],
+	outputs: import("./compodocTypes").Property[],
+	args: Record<string, unknown> | undefined,
+): string[] {
+	const inputByName = new Map(inputs.map((i) => [i.name, i]));
+	const outputNames = new Set(outputs.map((o) => o.name));
+	const bindings: string[] = [];
+
+	// Required signal inputs with no provided arg value
+	for (const input of inputs) {
+		if (input.required && !(args && input.name in args)) {
+			bindings.push(`[${input.name}]="/* required */"`);
+		}
+	}
+
+	if (args) {
+		for (const [key, value] of Object.entries(args)) {
+			if (outputNames.has(key)) {
+				// Output binding — ignore the arg value, just show the event binding syntax
+				bindings.push(`(${key})="handleEvent($event)"`);
+			} else if (inputByName.has(key)) {
+				if (value === true) {
+					bindings.push(key);
+				} else if (value === false) {
+					bindings.push(`[${key}]="false"`);
+				} else if (typeof value === "string") {
+					bindings.push(`${key}="${value}"`);
+				} else {
+					bindings.push(`[${key}]="${JSON.stringify(value)}"`);
+				}
+			}
+		}
+	}
+
+	return bindings;
+}
+
+/**
+ * Render one snippet from a parsed selector part + bindings.
+ *
+ * - Element selector (`app-button`): `<app-button [i]="v"></app-button>`
+ * - Attribute-only (`[lib-btn]`):    `<div lib-btn [i]="v"></div>`  (fallback host: div)
+ * - Compound (`button[lib-btn]`):    `<button lib-btn [i]="v"></button>`
+ */
+function renderSnippet(
+	{ element, attributes }: ParsedSelectorPart,
+	bindings: string[],
+): string {
+	const host = element ?? "div";
+	const isVoid = ["input", "br", "hr", "img", "area", "link", "meta"].includes(
+		host,
+	);
+
+	const parts = [host, ...attributes, ...bindings].join(" ");
+
+	return isVoid ? `<${parts}>` : `<${parts}></${host}>`;
+}
+
+/**
+ * Generate one Angular template snippet per selector variant.
+ *
+ * A selector like `"button[lib-btn], a[lib-btn]"` produces two snippets so
+ * consumers can show all valid host-element usages.
+ *
+ * Returns `undefined` when the selector is missing (no guess is attempted).
+ */
+function buildAngularSnippets(
+	selector: string | undefined,
+	inputs: import("./compodocTypes").Property[],
+	outputs: import("./compodocTypes").Property[],
+	args: Record<string, unknown> | undefined,
+): string[] | undefined {
 	if (!selector) {
 		return undefined;
 	}
 
-	const bindings = args
-		? Object.entries(args)
-				.filter(([key]) => inputNames.has(key))
-				.map(([key, value]) => {
-					if (typeof value === "string") {
-						return `${key}="${value}"`;
-					}
-					return `[${key}]="${JSON.stringify(value)}"`;
-				})
-		: [];
+	const bindings = buildBindings(inputs, outputs, args);
 
-	if (bindings.length === 0) {
-		return `<${selector}></${selector}>`;
-	}
-
-	return `<${selector} ${bindings.join(" ")}></${selector}>`;
+	return selector
+		.split(",")
+		.map((part) => renderSnippet(parseSelectorPart(part), bindings));
 }
 
 // ---------------------------------------------------------------------------

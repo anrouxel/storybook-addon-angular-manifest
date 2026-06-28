@@ -32,6 +32,8 @@
     "prebuild": "node -e \"fs.rmSync('./dist', { recursive: true, force: true })\"",
     "build": "tsdown",
     "build:watch": "npm run build -- --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "check": "biome check ./src",
     "check:apply": "pnpm check --write",
     "check:apply-unsafe": "pnpm check --write --unsafe",
@@ -48,21 +50,26 @@
     "pathe": "^2.0.3"
   },
   "devDependencies": {
+    "@angular/core": "^22.0.4",
     "@biomejs/biome": "2.5.1",
     "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "next",
     "@commitlint/cli": "^21.1.0",
     "@commitlint/config-conventional": "^21.1.0",
     "@commitlint/types": "^21.1.0",
+    "@storybook/angular-vite": "next",
     "@types/node": "^26.0.1",
     "lefthook": "^2.1.9",
+    "memfs": "^4.57.8",
     "npm-run-all2": "^9.0.2",
     "storybook": "next",
+    "ts-dedent": "^2.3.0",
     "tsdown": "^0.22.3",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   },
   "peerDependencies": {
-    "storybook": "*"
+    "storybook": "10.5.0"
   },
   "publishConfig": {
     "access": "public"
@@ -70,7 +77,8 @@
   "storybook": {
     "displayName": "Storybook Addon Angular Manifest",
     "supportedFrameworks": [
-      "angular"
+      "angular",
+      "angular-vite"
     ],
     "icon": "https://angular.io/assets/images/logos/angular/angular.svg"
   },

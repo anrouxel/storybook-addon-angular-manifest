@@ -1,5 +1,8 @@
 allowBuilds:
+  '@parcel/watcher': false
   esbuild: true
   lefthook: true
+  lmdb: false
+  msgpackr-extract: false
 minimumReleaseAgeExclude:
   - '@compodoc/compodoc@2.0.0'
