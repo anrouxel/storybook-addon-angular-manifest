@@ -57,7 +57,7 @@
     "@commitlint/cli": "^21.1.0",
     "@commitlint/config-conventional": "^21.1.0",
     "@commitlint/types": "^21.1.0",
-    "@storybook/angular": "^10.4.6",
+    "@storybook/angular": "next",
     "@types/node": "^26.0.1",
     "lefthook": "^2.1.9",
     "memfs": "^4.57.8",

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/angular";
-import { LibBtnDirective } from "../lib/btn/lib-btn.directive";
+import { LibBtnDirective } from "./lib-btn.directive";
 
 const meta: Meta<LibBtnDirective> = {
 	title: "Directives/LibBtn",

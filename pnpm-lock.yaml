@@ -43,8 +43,8 @@ importers:
         specifier: ^21.1.0
         version: 21.1.0
       '@storybook/angular':
-        specifier: ^10.4.6
-        version: 10.4.6(41f1812659379029e7368da6c27c4a58)
+        specifier: next
+        version: 10.5.0-alpha.9(41f1812659379029e7368da6c27c4a58)
       '@types/node':
         specifier: ^26.0.1
         version: 26.0.1
@@ -2485,8 +2485,8 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@storybook/angular@10.4.6':
-    resolution: {integrity: sha512-52P9XJMNlF0tZgJHxrcVMtxDNdjVZXLPMN0JclLQq6sOXVQpbl6fMy20Bwx1Jy0feR7JObsL/+iCmTv/hZ4LlQ==}
+  '@storybook/angular@10.5.0-alpha.9':
+    resolution: {integrity: sha512-GQd/9M9gRMxaPwhWdORUEJo8TL5tNgOzMMT6sX2ETNBiZCnmtJnBIZYvPtT6z17IqVYKhVi2LDyxNvjirOa7yQ==}
     peerDependencies:
       '@angular-devkit/architect': '>=0.1800.0 < 0.2200.0'
       '@angular-devkit/build-angular': '>=18.0.0 < 22.0.0'
@@ -2500,7 +2500,7 @@ packages:
       '@angular/platform-browser': '>=18.0.0 < 22.0.0'
       '@angular/platform-browser-dynamic': '>=18.0.0 < 22.0.0'
       rxjs: ^6.5.3 || ^7.4.0
-      storybook: ^10.4.6
+      storybook: ^10.5.0-alpha.9
       typescript: ^4.9.0 || ^5.0.0
       zone.js: '>=0.14.0'
     peerDependenciesMeta:
@@ -2511,19 +2511,19 @@ packages:
       zone.js:
         optional: true
 
-  '@storybook/builder-webpack5@10.4.6':
-    resolution: {integrity: sha512-klJUCBlkr1mFqXxsyYc7akIBhT5VOBTRcHChSFXq6Kbh+qQYOvfmgBpY0Tv+f7ffBmzp6gxpTorg7eGxlklxeQ==}
+  '@storybook/builder-webpack5@10.5.0-alpha.9':
+    resolution: {integrity: sha512-iDE9cOJGQasrtHRwN1PWItoV6qfUq7y2735ndL4C2UjGb4D+4Mkb/4UJnqSFdg86XwV+NCqnO5MahkmZyUWIZA==}
     peerDependencies:
-      storybook: ^10.4.6
+      storybook: ^10.5.0-alpha.9
       typescript: '*'
     peerDependenciesMeta:
       typescript:
         optional: true
 
-  '@storybook/core-webpack@10.4.6':
-    resolution: {integrity: sha512-DDhpgaFGb1AC0lzfR2LOozCj+uT14tsr2R9551PHgcC3ru1yfhL2DNbIjdiMuQP8nVm+2HKeXWhybJGYtk9z9g==}
+  '@storybook/core-webpack@10.5.0-alpha.9':
+    resolution: {integrity: sha512-hdB1NGveXO5cq0OVV/vytHNNOSnBCaTJsieQxUE1y+44dJjokJmcu9cjtXJcP2vdzYC3JTXgbS2FQvlO/NygAA==}
     peerDependencies:
-      storybook: ^10.4.6
+      storybook: ^10.5.0-alpha.9
 
   '@storybook/global@5.0.0':
     resolution: {integrity: sha512-FcOqPAXACP0I3oJ/ws6/rrPT9WGhu915Cg8D02a9YxLo0DE9zI+a9A5gRGvmQ09fiWPukqI8ZAEoQEdWUKMQdQ==}
@@ -8190,7 +8190,7 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@storybook/angular@10.4.6(41f1812659379029e7368da6c27c4a58)':
+  '@storybook/angular@10.5.0-alpha.9(41f1812659379029e7368da6c27c4a58)':
     dependencies:
       '@angular-devkit/architect': 0.2102.17(chokidar@5.0.0)
       '@angular-devkit/build-angular': 21.2.17(@angular/compiler-cli@21.2.17(typescript@6.0.3))(@angular/core@22.0.4(rxjs@7.8.2))(@angular/platform-browser@21.2.17(@angular/common@21.2.17(@angular/core@22.0.4(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.4(rxjs@7.8.2)))(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@26.0.1)(chokidar@5.0.0)(html-webpack-plugin@5.6.7(webpack@5.108.1(esbuild@0.28.1)(lightningcss@1.32.0)(postcss@8.5.15)))(jiti@2.6.1)(lightningcss@1.32.0)(typescript@6.0.3)(vitest@4.1.9(@types/node@26.0.1)(vite@8.1.0(@types/node@26.0.1)(esbuild@0.28.1)(jiti@2.6.1)(less@4.4.2)(sass@1.97.3)(terser@5.46.0)(yaml@2.9.0)))(yaml@2.9.0)
@@ -8200,7 +8200,7 @@ snapshots:
       '@angular/core': 22.0.4(rxjs@7.8.2)
       '@angular/platform-browser': 21.2.17(@angular/common@21.2.17(@angular/core@22.0.4(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.4(rxjs@7.8.2))
       '@angular/platform-browser-dynamic': 20.0.7(@angular/common@21.2.17(@angular/core@22.0.4(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.4(rxjs@7.8.2))(@angular/platform-browser@21.2.17(@angular/common@21.2.17(@angular/core@22.0.4(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.4(rxjs@7.8.2)))
-      '@storybook/builder-webpack5': 10.4.6(esbuild@0.28.1)(lightningcss@1.32.0)(postcss@8.5.15)(storybook@10.5.0-alpha.9(react@19.2.7))(typescript@6.0.3)
+      '@storybook/builder-webpack5': 10.5.0-alpha.9(esbuild@0.28.1)(lightningcss@1.32.0)(postcss@8.5.15)(storybook@10.5.0-alpha.9(react@19.2.7))(typescript@6.0.3)
       '@storybook/global': 5.0.0
       rxjs: 7.8.2
       storybook: 10.5.0-alpha.9(react@19.2.7)
@@ -8225,9 +8225,9 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@storybook/builder-webpack5@10.4.6(esbuild@0.28.1)(lightningcss@1.32.0)(postcss@8.5.15)(storybook@10.5.0-alpha.9(react@19.2.7))(typescript@6.0.3)':
+  '@storybook/builder-webpack5@10.5.0-alpha.9(esbuild@0.28.1)(lightningcss@1.32.0)(postcss@8.5.15)(storybook@10.5.0-alpha.9(react@19.2.7))(typescript@6.0.3)':
     dependencies:
-      '@storybook/core-webpack': 10.4.6(storybook@10.5.0-alpha.9(react@19.2.7))
+      '@storybook/core-webpack': 10.5.0-alpha.9(storybook@10.5.0-alpha.9(react@19.2.7))
       case-sensitive-paths-webpack-plugin: 2.4.0
       cjs-module-lexer: 1.4.3
       css-loader: 7.1.4(webpack@5.108.1(esbuild@0.28.1)(lightningcss@1.32.0)(postcss@8.5.15))
@@ -8235,6 +8235,7 @@ snapshots:
       fork-ts-checker-webpack-plugin: 9.1.0(typescript@6.0.3)(webpack@5.108.1(esbuild@0.28.1)(lightningcss@1.32.0)(postcss@8.5.15))
       html-webpack-plugin: 5.6.7(webpack@5.108.1(esbuild@0.28.1)(lightningcss@1.32.0)(postcss@8.5.15))
       magic-string: 0.30.21
+      semver: 7.8.5
       storybook: 10.5.0-alpha.9(react@19.2.7)
       style-loader: 4.0.0(webpack@5.108.1(esbuild@0.28.1)(lightningcss@1.32.0)(postcss@8.5.15))
       terser-webpack-plugin: 5.6.1(esbuild@0.28.1)(lightningcss@1.32.0)(postcss@8.5.15)(webpack@5.108.1(esbuild@0.28.1)(lightningcss@1.32.0)(postcss@8.5.15))
@@ -8261,7 +8262,7 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@storybook/core-webpack@10.4.6(storybook@10.5.0-alpha.9(react@19.2.7))':
+  '@storybook/core-webpack@10.5.0-alpha.9(storybook@10.5.0-alpha.9(react@19.2.7))':
     dependencies:
       storybook: 10.5.0-alpha.9(react@19.2.7)
       ts-dedent: 2.3.0
@@ -11124,7 +11125,7 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
       schema-utils: 4.3.3
-      terser: 5.46.0
+      terser: 5.48.0
       webpack: 5.105.2(esbuild@0.28.1)(lightningcss@1.32.0)(postcss@8.5.12)
     optionalDependencies:
       esbuild: 0.28.1
@@ -11136,7 +11137,7 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
       schema-utils: 4.3.3
-      terser: 5.46.0
+      terser: 5.48.0
       webpack: 5.108.1(esbuild@0.28.1)(lightningcss@1.32.0)(postcss@8.5.15)
     optionalDependencies:
       esbuild: 0.28.1
