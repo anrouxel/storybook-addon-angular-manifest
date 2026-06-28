@@ -32,9 +32,7 @@ export const COMPODOC_JSON_PATH = `${ROOT}/documentation.json`;
 
 export const mockFindPackageJson = vi.mocked(findPackageJson);
 
-export function setupMemfsMocks(
-	extraFiles: Record<string, string> = {},
-): void {
+export function setupMemfsMocks(extraFiles: Record<string, string> = {}): void {
 	vol.reset();
 	vi.clearAllMocks();
 	invalidateCache();

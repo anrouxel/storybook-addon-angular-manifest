@@ -28,9 +28,9 @@ import { fsMocks, manifestEntries } from "./fixtures";
 import { manifest } from "./generator";
 import {
 	COMPODOC_JSON_PATH,
+	mockFindPackageJson,
 	PACKAGE_JSON_PATH,
 	ROOT,
-	mockFindPackageJson,
 	setupMemfsMocks,
 } from "./memfs-test-setup";
 
@@ -70,18 +70,15 @@ async function runManifest(
 		mockFindPackageJson.mockReturnValue(PACKAGE_JSON_PATH);
 	}
 
-	return manifest(
-		{},
-		{
-			manifestEntries: entries,
-			watch: false,
-			configDir: ROOT,
-			outputDir: `${ROOT}/storybook-static`,
-			cacheDir: `${ROOT}/.cache`,
-			packageJson: {},
-			presets: {} as any,
-		} as any,
-	);
+	return manifest({}, {
+		manifestEntries: entries,
+		watch: false,
+		configDir: ROOT,
+		outputDir: `${ROOT}/storybook-static`,
+		cacheDir: `${ROOT}/.cache`,
+		packageJson: {},
+		presets: {} as any,
+	} as any);
 }
 
 // ---------------------------------------------------------------------------
@@ -137,7 +134,9 @@ describe("manifest generator — happy path", () => {
 	it("uses the scoped package name in the import statement", async () => {
 		const result = await runManifest({
 			extraFiles: {
-				[`${ROOT}/package.json`]: JSON.stringify({ name: "@acme/ui-components" }),
+				[`${ROOT}/package.json`]: JSON.stringify({
+					name: "@acme/ui-components",
+				}),
 			},
 		});
 		const component = getComponents(result).find(
@@ -277,30 +276,25 @@ describe("manifest generator — compodoc missing", () => {
 		if (!buttonStories || !buttonComponent) throw new Error("missing fixtures");
 
 		vol.reset();
-		vol.fromJSON(
-			{
-				[`${ROOT}/src/button/button.stories.ts`]: buttonStories,
-				[`${ROOT}/src/button/button.component.ts`]: buttonComponent,
-			},
-		);
+		vol.fromJSON({
+			[`${ROOT}/src/button/button.stories.ts`]: buttonStories,
+			[`${ROOT}/src/button/button.component.ts`]: buttonComponent,
+		});
 
 		const buttonEntry = manifestEntries.find(
 			(e) => e.importPath === "./src/button/button.stories.ts",
 		);
 		if (!buttonEntry) throw new Error("missing fixture entry");
 
-		const result = await manifest(
-			{},
-			{
-				manifestEntries: [buttonEntry],
-				watch: false,
-				configDir: ROOT,
-				outputDir: `${ROOT}/storybook-static`,
-				cacheDir: `${ROOT}/.cache`,
-				packageJson: {},
-				presets: {} as any,
-			} as any,
-		);
+		const result = await manifest({}, {
+			manifestEntries: [buttonEntry],
+			watch: false,
+			configDir: ROOT,
+			outputDir: `${ROOT}/storybook-static`,
+			cacheDir: `${ROOT}/.cache`,
+			packageJson: {},
+			presets: {} as any,
+		} as any);
 
 		const component = getComponents(result)[0];
 		expect(component?.error).toBeDefined();

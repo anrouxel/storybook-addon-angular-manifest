@@ -50,7 +50,7 @@ const DEV = "dev";
 const TEST = "test";
 const AUTODOCS = "autodocs";
 
-export const storyIndex = {
+const storyIndex = {
 	v: 5,
 	entries: {
 		// Button stories
