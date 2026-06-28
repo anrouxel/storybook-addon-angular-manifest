@@ -24,11 +24,15 @@ vi.mock("empathic/package", () => ({
 }));
 
 import type { AngularComponentManifest } from "./buildAngularComponentManifest";
-import { invalidateCompodocCache } from "./compodocExtractor";
 import { files, manifestEntries } from "./fixtures";
 import { manifest } from "./generator";
-import { mockFindPackageJson } from "./memfs-test-setup";
-import { invalidateCache } from "./utils";
+import {
+	COMPODOC_JSON_PATH,
+	PACKAGE_JSON_PATH,
+	ROOT,
+	mockFindPackageJson,
+	setupMemfsMocks,
+} from "./memfs-test-setup";
 
 /** Cast the manifest result to a typed record of AngularComponentManifest. */
 function getComponents(result: Awaited<ReturnType<typeof manifest>>) {
@@ -41,34 +45,15 @@ function getComponents(result: Awaited<ReturnType<typeof manifest>>) {
 }
 
 // ---------------------------------------------------------------------------
-// Absolute paths used inside the virtual filesystem
+// Per-test setup
 // ---------------------------------------------------------------------------
 
-const ROOT = "/project";
-const PACKAGE_JSON_PATH = `${ROOT}/package.json`;
-const BUTTON_STORY_PATH = `${ROOT}/src/button/button.stories.ts`;
-const BUTTON_COMPONENT_PATH = `${ROOT}/src/button/button.component.ts`;
-const COMPODOC_JSON_PATH = `${ROOT}/documentation.json`;
+beforeEach(() => {
+	setupMemfsMocks();
+});
 
 // ---------------------------------------------------------------------------
-// Helper — build an absolute-path volume from the fixture relative-path files
-// ---------------------------------------------------------------------------
-
-function absoluteFiles(
-	overrides: Record<string, string> = {},
-): Record<string, string> {
-	const result: Record<string, string> = {};
-	for (const [rel, content] of Object.entries(files)) {
-		const abs = rel.startsWith("./")
-			? `${ROOT}/${rel.slice(2)}`
-			: `${ROOT}/${rel}`;
-		result[abs] = content;
-	}
-	return { ...result, ...overrides };
-}
-
-// ---------------------------------------------------------------------------
-// Helper — run the generator with a virtual filesystem
+// Helper — run the generator against the virtual filesystem
 // ---------------------------------------------------------------------------
 
 async function runManifest(
@@ -79,30 +64,29 @@ async function runManifest(
 ) {
 	const { extraFiles = {}, entries = manifestEntries } = options;
 
-	vol.fromJSON(absoluteFiles(extraFiles));
+	if (Object.keys(extraFiles).length > 0) {
+		vol.reset();
+		vol.fromJSON({ ...files, ...extraFiles }, ROOT);
+		mockFindPackageJson.mockReturnValue(PACKAGE_JSON_PATH);
+	}
 
-	return manifest({}, {
-		manifestEntries: entries,
-		watch: false,
-		configDir: ROOT,
-		outputDir: `${ROOT}/storybook-static`,
-		cacheDir: `${ROOT}/.cache`,
-		packageJson: {},
-		presets: {} as any,
-	} as any);
+	return manifest(
+		{},
+		{
+			manifestEntries: entries,
+			watch: false,
+			configDir: ROOT,
+			outputDir: `${ROOT}/storybook-static`,
+			cacheDir: `${ROOT}/.cache`,
+			packageJson: {},
+			presets: {} as any,
+		} as any,
+	);
 }
 
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
-
-beforeEach(() => {
-	vol.reset();
-	invalidateCache();
-	invalidateCompodocCache();
-	vi.spyOn(process, "cwd").mockReturnValue(ROOT);
-	mockFindPackageJson.mockReturnValue(PACKAGE_JSON_PATH);
-});
 
 describe("manifest generator — happy path", () => {
 	it("builds a manifest with the correct component id and name", async () => {
@@ -153,7 +137,7 @@ describe("manifest generator — happy path", () => {
 	it("uses the scoped package name in the import statement", async () => {
 		const result = await runManifest({
 			extraFiles: {
-				[PACKAGE_JSON_PATH]: JSON.stringify({ name: "@acme/ui-components" }),
+				[`${ROOT}/package.json`]: JSON.stringify({ name: "@acme/ui-components" }),
 			},
 		});
 		const component = getComponents(result).find(
@@ -177,7 +161,7 @@ describe("manifest generator — happy path", () => {
 	it("falls back to relative specifier when package.json has no name field", async () => {
 		const result = await runManifest({
 			extraFiles: {
-				[PACKAGE_JSON_PATH]: JSON.stringify({ version: "1.0.0" }),
+				[`${ROOT}/package.json`]: JSON.stringify({ version: "1.0.0" }),
 			},
 		});
 		const component = getComponents(result).find(
@@ -292,25 +276,31 @@ describe("manifest generator — compodoc missing", () => {
 		const buttonComponent = files["./src/button/button.component.ts"];
 		if (!buttonStories || !buttonComponent) throw new Error("missing fixtures");
 
-		vol.fromJSON({
-			[BUTTON_STORY_PATH]: buttonStories,
-			[BUTTON_COMPONENT_PATH]: buttonComponent,
-		});
+		vol.reset();
+		vol.fromJSON(
+			{
+				[`${ROOT}/src/button/button.stories.ts`]: buttonStories,
+				[`${ROOT}/src/button/button.component.ts`]: buttonComponent,
+			},
+		);
 
 		const buttonEntry = manifestEntries.find(
 			(e) => e.importPath === "./src/button/button.stories.ts",
 		);
 		if (!buttonEntry) throw new Error("missing fixture entry");
 
-		const result = await manifest({}, {
-			manifestEntries: [buttonEntry],
-			watch: false,
-			configDir: ROOT,
-			outputDir: `${ROOT}/storybook-static`,
-			cacheDir: `${ROOT}/.cache`,
-			packageJson: {},
-			presets: {} as any,
-		} as any);
+		const result = await manifest(
+			{},
+			{
+				manifestEntries: [buttonEntry],
+				watch: false,
+				configDir: ROOT,
+				outputDir: `${ROOT}/storybook-static`,
+				cacheDir: `${ROOT}/.cache`,
+				packageJson: {},
+				presets: {} as any,
+			} as any,
+		);
 
 		const component = getComponents(result)[0];
 		expect(component?.error).toBeDefined();
@@ -327,7 +317,9 @@ describe("manifest generator — meta.component missing", () => {
     `;
 
 		const result = await runManifest({
-			extraFiles: { [BUTTON_STORY_PATH]: storiesWithoutComponent },
+			extraFiles: {
+				[`${ROOT}/src/button/button.stories.ts`]: storiesWithoutComponent,
+			},
 			entries: manifestEntries.filter(
 				(e) => e.importPath === "./src/button/button.stories.ts",
 			),
