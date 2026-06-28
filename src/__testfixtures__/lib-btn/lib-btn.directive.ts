@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Directive, Input } from "@angular/core";
 
 /**
