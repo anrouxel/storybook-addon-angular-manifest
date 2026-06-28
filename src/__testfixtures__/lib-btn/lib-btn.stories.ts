@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/angular";
+import type { Meta, StoryObj } from "@storybook/angular-vite";
 import { LibBtnDirective } from "./lib-btn.directive";
 
 const meta: Meta<LibBtnDirective> = {
