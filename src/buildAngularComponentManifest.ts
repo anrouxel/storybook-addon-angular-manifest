@@ -29,6 +29,8 @@ export interface AngularComponentManifest extends ComponentManifest {
 	changeDetection?: string;
 	/** Raw Angular selector, e.g. `"button[lib-btn], a[lib-btn]"`. */
 	selector?: string;
+	/** Angular story entries with optional multi-snippet support. */
+	stories: ResolvedAngularStoryEntry[];
 	[key: string]: unknown;
 }
 
@@ -94,7 +96,8 @@ export function buildAngularComponentManifest({
 	filterStoryIds?: ReadonlySet<string>;
 }): AngularComponentManifest {
 	const id = getComponentIdFromEntry(entry);
-	const title = entry.title.split("/").at(-1)?.replace(/\s+/g, "");
+	const title =
+		entry.title.split("/").at(-1)?.replace(/\s+/g, "") ?? entry.title;
 	const name = componentName ?? title;
 
 	const compodocData =

@@ -15,7 +15,7 @@ function makeSourceFile(code: string): ts.SourceFile {
 	return ts.createSourceFile("story.ts", code, ts.ScriptTarget.Latest, true);
 }
 
-function makeParsedCsf(overrides: Partial<ParsedCsf> = {}): ParsedCsf {
+function makeParsedCsf(overrides: Record<string, unknown> = {}): ParsedCsf {
 	return {
 		_code: "",
 		_meta: {},

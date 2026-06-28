@@ -23,11 +23,22 @@ vi.mock("empathic/package", () => ({
 	up: vi.fn(),
 }));
 
+import type { AngularComponentManifest } from "./buildAngularComponentManifest";
 import { invalidateCompodocCache } from "./compodocExtractor";
 import { files, manifestEntries } from "./fixtures";
 import { manifest } from "./generator";
 import { mockFindPackageJson } from "./memfs-test-setup";
 import { invalidateCache } from "./utils";
+
+/** Cast the manifest result to a typed record of AngularComponentManifest. */
+function getComponents(result: Awaited<ReturnType<typeof manifest>>) {
+	return Object.values(
+		(result as any).components.components as Record<
+			string,
+			AngularComponentManifest
+		>,
+	);
+}
 
 // ---------------------------------------------------------------------------
 // Absolute paths used inside the virtual filesystem
@@ -96,7 +107,7 @@ beforeEach(() => {
 describe("manifest generator — happy path", () => {
 	it("builds a manifest with the correct component id and name", async () => {
 		const result = await runManifest();
-		const component = Object.values(result.components.components).find(
+		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
 		expect(component).toBeDefined();
@@ -105,7 +116,7 @@ describe("manifest generator — happy path", () => {
 
 	it("attaches compodoc selector to the manifest", async () => {
 		const result = await runManifest();
-		const component = Object.values(result.components.components).find(
+		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
 		expect(component?.selector).toBe("app-button");
@@ -113,7 +124,7 @@ describe("manifest generator — happy path", () => {
 
 	it("marks standalone components", async () => {
 		const result = await runManifest();
-		const component = Object.values(result.components.components).find(
+		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
 		expect(component?.standalone).toBe(true);
@@ -121,7 +132,7 @@ describe("manifest generator — happy path", () => {
 
 	it("attaches compodoc description", async () => {
 		const result = await runManifest();
-		const component = Object.values(result.components.components).find(
+		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
 		expect(component?.description).toBe(
@@ -131,7 +142,7 @@ describe("manifest generator — happy path", () => {
 
 	it("resolves import specifier from the nearest package.json name", async () => {
 		const result = await runManifest();
-		const component = Object.values(result.components.components).find(
+		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
 		expect(component?.import).toBe(
@@ -145,7 +156,7 @@ describe("manifest generator — happy path", () => {
 				[PACKAGE_JSON_PATH]: JSON.stringify({ name: "@acme/ui-components" }),
 			},
 		});
-		const component = Object.values(result.components.components).find(
+		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
 		expect(component?.import).toBe(
@@ -156,7 +167,7 @@ describe("manifest generator — happy path", () => {
 	it("falls back to relative specifier when no package.json is found", async () => {
 		mockFindPackageJson.mockReturnValue(undefined);
 		const result = await runManifest();
-		const component = Object.values(result.components.components).find(
+		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
 		expect(component?.import).toContain("ButtonComponent");
@@ -169,7 +180,7 @@ describe("manifest generator — happy path", () => {
 				[PACKAGE_JSON_PATH]: JSON.stringify({ version: "1.0.0" }),
 			},
 		});
-		const component = Object.values(result.components.components).find(
+		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
 		expect(component?.import).toContain("ButtonComponent");
@@ -180,7 +191,7 @@ describe("manifest generator — happy path", () => {
 describe("manifest generator — stories", () => {
 	it("generates snippets for each story", async () => {
 		const result = await runManifest();
-		const component = Object.values(result.components.components).find(
+		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
 		expect(component?.stories.length).toBeGreaterThan(0);
@@ -188,7 +199,7 @@ describe("manifest generator — stories", () => {
 
 	it("generates a snippet using the component selector", async () => {
 		const result = await runManifest();
-		const component = Object.values(result.components.components).find(
+		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
 		const primary = component?.stories.find((s) => s.name === "Primary");
@@ -197,7 +208,7 @@ describe("manifest generator — stories", () => {
 
 	it("generates a snippet for every story entry", async () => {
 		const result = await runManifest();
-		const component = Object.values(result.components.components).find(
+		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
 		const storyNames = component?.stories.map((s) => s.name);
@@ -208,7 +219,7 @@ describe("manifest generator — stories", () => {
 
 	it("uses render.template when @useTemplate is present", async () => {
 		const result = await runManifest();
-		const component = Object.values(result.components.components).find(
+		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
 		const custom = component?.stories.find((s) => s.name === "Custom Template");
@@ -221,7 +232,7 @@ describe("manifest generator — stories", () => {
 describe("manifest generator — LibBtnDirective (compound selector)", () => {
 	it("includes the directive in the manifest", async () => {
 		const result = await runManifest();
-		const directive = Object.values(result.components.components).find(
+		const directive = getComponents(result).find(
 			(c) => c.name === "LibBtnDirective",
 		);
 		expect(directive).toBeDefined();
@@ -229,7 +240,7 @@ describe("manifest generator — LibBtnDirective (compound selector)", () => {
 
 	it("attaches the compound selector", async () => {
 		const result = await runManifest();
-		const directive = Object.values(result.components.components).find(
+		const directive = getComponents(result).find(
 			(c) => c.name === "LibBtnDirective",
 		);
 		expect(directive?.selector).toBe("button[lib-btn], a[lib-btn]");
@@ -237,7 +248,7 @@ describe("manifest generator — LibBtnDirective (compound selector)", () => {
 
 	it("produces multiple snippets for compound selectors", async () => {
 		const result = await runManifest();
-		const directive = Object.values(result.components.components).find(
+		const directive = getComponents(result).find(
 			(c) => c.name === "LibBtnDirective",
 		);
 		const primary = directive?.stories.find((s) => s.name === "Primary");
@@ -248,7 +259,7 @@ describe("manifest generator — LibBtnDirective (compound selector)", () => {
 
 	it("attaches the directive import from the package name", async () => {
 		const result = await runManifest();
-		const directive = Object.values(result.components.components).find(
+		const directive = getComponents(result).find(
 			(c) => c.name === "LibBtnDirective",
 		);
 		expect(directive?.import).toBe(
@@ -269,9 +280,7 @@ describe("manifest generator — compodoc missing", () => {
 		const result = await runManifest({
 			extraFiles: { [COMPODOC_JSON_PATH]: emptyCompodoc },
 		});
-		const component = Object.values(result.components.components).find(
-			(c) => "error" in c,
-		);
+		const component = getComponents(result).find((c) => "error" in c);
 		expect(component?.error).toBeDefined();
 		expect(component?.error?.name).toBe(
 			"Component not found in Compodoc output",
@@ -303,7 +312,7 @@ describe("manifest generator — compodoc missing", () => {
 			presets: {} as any,
 		} as any);
 
-		const component = Object.values(result.components.components)[0];
+		const component = getComponents(result)[0];
 		expect(component?.error).toBeDefined();
 	});
 });
@@ -323,7 +332,7 @@ describe("manifest generator — meta.component missing", () => {
 				(e) => e.importPath === "./src/stories/button.stories.ts",
 			),
 		});
-		const component = Object.values(result.components.components)[0];
+		const component = getComponents(result)[0];
 		expect(component?.error).toBeDefined();
 		expect(component?.error?.name).toBe("No component found");
 	});

@@ -99,7 +99,7 @@ export function extractAngularStorySnippets(
 	// Parse the source file once for render-template extraction.
 	// csf._code may be undefined in some storybook versions; fall back to the Babel
 	// intermediate representation (_file.code) which always contains the raw source.
-	const rawCode: string = csf._code ?? (csf as any)._file?.code ?? "";
+	const rawCode: string = (csf as any)._code ?? (csf as any)._file?.code ?? "";
 	const sourceFile = ts.createSourceFile(
 		"story.ts",
 		rawCode,
@@ -275,7 +275,7 @@ function parseSelectorPart(part: string): ParsedSelectorPart {
 
 	// Extract all attribute selectors [attr] or [attr=val]
 	const attrMatches = [...trimmed.matchAll(/\[([^\]=]+)(?:=[^\]]+)?\]/g)];
-	const attributes = attrMatches.map((m) => m[1].trim());
+	const attributes = attrMatches.map((m) => m[1]?.trim() ?? "");
 
 	// The element tag is everything before the first [ or . or :
 	const elementMatch = trimmed.match(/^([a-z][\w-]*)/i);
