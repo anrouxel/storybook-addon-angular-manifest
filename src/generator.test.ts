@@ -27,136 +27,58 @@ import { up as findPackageJson } from "empathic/package";
 import { invalidateCompodocCache } from "./compodocExtractor";
 import { manifest } from "./generator";
 import { invalidateCache } from "./utils";
+import { files, manifestEntries } from "./fixtures";
 
 const mockFindPackageJson = vi.mocked(findPackageJson);
 
 // ---------------------------------------------------------------------------
-// Fixtures
+// Absolute paths used inside the virtual filesystem
 // ---------------------------------------------------------------------------
 
-const BUTTON_COMPONENT_PATH = "/project/src/lib/button/button.component.ts";
-const BUTTON_STORY_PATH = "/project/src/stories/button.stories.ts";
-const PACKAGE_JSON_PATH = "/project/package.json";
-const COMPODOC_JSON_PATH = "/project/documentation.json";
+const ROOT = "/project";
+const PACKAGE_JSON_PATH = `${ROOT}/package.json`;
+const BUTTON_STORY_PATH = `${ROOT}/src/stories/button.stories.ts`;
+const BUTTON_COMPONENT_PATH = `${ROOT}/src/lib/button/button.component.ts`;
+const LIB_BTN_DIRECTIVE_PATH = `${ROOT}/src/lib/btn/lib-btn.directive.ts`;
+const COMPODOC_JSON_PATH = `${ROOT}/documentation.json`;
 
-const buttonComponentSource = dedent`
-  import { Component, Input, Output, EventEmitter } from '@angular/core';
+// ---------------------------------------------------------------------------
+// Helper — build an absolute-path volume from the fixture relative-path files
+// ---------------------------------------------------------------------------
 
-  @Component({
-    selector: 'app-button',
-    standalone: true,
-    template: '<button>{{ label }}</button>',
-  })
-  export class ButtonComponent {
-    @Input() label = 'Click me';
-    @Input() disabled = false;
-    @Output() clicked = new EventEmitter<void>();
-  }
-`;
-
-const buttonStoriesSource = dedent`
-  import type { Meta, StoryObj } from '@storybook/angular';
-  import { ButtonComponent } from '../lib/button/button.component';
-
-  const meta: Meta<ButtonComponent> = {
-    title: 'Components/Button',
-    component: ButtonComponent,
-  };
-  export default meta;
-
-  export const Primary: StoryObj<ButtonComponent> = {
-    args: { label: 'Click me', disabled: false },
-  };
-
-  export const Disabled: StoryObj<ButtonComponent> = {
-    args: { label: 'Click me', disabled: true },
-  };
-
-  /**
-   * @useTemplate
-   */
-  export const CustomTemplate: StoryObj<ButtonComponent> = {
-    render: (args) => ({ template: \`<app-button label="custom"></app-button>\` }),
-  };
-`;
-
-const compodocJson = {
-	components: [
-		{
-			name: "ButtonComponent",
-			type: "component",
-			selector: "app-button",
-			standalone: true,
-			description: "A reusable button component.",
-			rawdescription: "A reusable button component.",
-			inputsClass: [
-				{ name: "label", type: "string", optional: true, defaultValue: "'Click me'" },
-				{ name: "disabled", type: "boolean", optional: true, defaultValue: "false" },
-			],
-			outputsClass: [
-				{ name: "clicked", type: "EventEmitter<void>", optional: true },
-			],
-			propertiesClass: [],
-			methodsClass: [],
-		},
-	],
-	directives: [],
-	pipes: [],
-	injectables: [],
-	classes: [],
-};
+function absoluteFiles(overrides: Record<string, string> = {}): Record<string, string> {
+	const result: Record<string, string> = {};
+	for (const [rel, content] of Object.entries(files)) {
+		const abs = rel.startsWith("./") ? `${ROOT}/${rel.slice(2)}` : `${ROOT}/${rel}`;
+		result[abs] = content;
+	}
+	return { ...result, ...overrides };
+}
 
 // ---------------------------------------------------------------------------
 // Helper — run the generator with a virtual filesystem
 // ---------------------------------------------------------------------------
 
 async function runManifest(options: {
-	storiesCode?: string;
-	componentCode?: string;
-	compodoc?: object;
 	extraFiles?: Record<string, string>;
-}) {
-	const {
-		storiesCode = buttonStoriesSource,
-		componentCode = buttonComponentSource,
-		compodoc = compodocJson,
-		extraFiles = {},
-	} = options;
+	entries?: typeof manifestEntries;
+} = {}) {
+	const { extraFiles = {}, entries = manifestEntries } = options;
 
-	vol.fromJSON({
-		[PACKAGE_JSON_PATH]: JSON.stringify({ name: "@my-org/my-lib" }),
-		[BUTTON_STORY_PATH]: storiesCode,
-		[BUTTON_COMPONENT_PATH]: componentCode,
-		[COMPODOC_JSON_PATH]: JSON.stringify(compodoc),
-		...extraFiles,
-	});
+	vol.fromJSON(absoluteFiles(extraFiles));
 
-	const storyBase = {
-		title: "Components/Button",
-		importPath: "./src/stories/button.stories.ts",
-		type: "story" as const,
-		subtype: "story" as const,
-		tags: [],
-	};
-
-	const result = await manifest(
+	return manifest(
 		{},
 		{
-			manifestEntries: [
-				{ ...storyBase, id: "components-button--primary", name: "Primary" },
-				{ ...storyBase, id: "components-button--disabled", name: "Disabled" },
-				{ ...storyBase, id: "components-button--custom-template", name: "Custom Template" },
-			],
+			manifestEntries: entries,
 			watch: false,
-			configDir: "/project",
-			outputDir: "/project/storybook-static",
-			cacheDir: "/project/.cache",
+			configDir: ROOT,
+			outputDir: `${ROOT}/storybook-static`,
+			cacheDir: `${ROOT}/.cache`,
 			packageJson: {},
 			presets: {} as any,
 		} as any,
 	);
-
-	return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -167,40 +89,49 @@ beforeEach(() => {
 	vol.reset();
 	invalidateCache();
 	invalidateCompodocCache();
-	vi.spyOn(process, "cwd").mockReturnValue("/project");
-	// By default, simulate finding the project package.json with a scoped name
+	vi.spyOn(process, "cwd").mockReturnValue(ROOT);
 	mockFindPackageJson.mockReturnValue(PACKAGE_JSON_PATH);
 });
 
 describe("manifest generator — happy path", () => {
 	it("builds a manifest with the correct component id and name", async () => {
-		const result = await runManifest({});
-		const component = Object.values(result.components.components)[0];
+		const result = await runManifest();
+		const component = Object.values(result.components.components).find(
+			(c) => c.name === "ButtonComponent",
+		);
 		expect(component).toBeDefined();
 		expect(component?.name).toBe("ButtonComponent");
 	});
 
 	it("attaches compodoc selector to the manifest", async () => {
-		const result = await runManifest({});
-		const component = Object.values(result.components.components)[0];
+		const result = await runManifest();
+		const component = Object.values(result.components.components).find(
+			(c) => c.name === "ButtonComponent",
+		);
 		expect(component?.selector).toBe("app-button");
 	});
 
 	it("marks standalone components", async () => {
-		const result = await runManifest({});
-		const component = Object.values(result.components.components)[0];
+		const result = await runManifest();
+		const component = Object.values(result.components.components).find(
+			(c) => c.name === "ButtonComponent",
+		);
 		expect(component?.standalone).toBe(true);
 	});
 
 	it("attaches compodoc description", async () => {
-		const result = await runManifest({});
-		const component = Object.values(result.components.components)[0];
-		expect(component?.description).toBe("A reusable button component.");
+		const result = await runManifest();
+		const component = Object.values(result.components.components).find(
+			(c) => c.name === "ButtonComponent",
+		);
+		expect(component?.description).toBe("Primary UI component for user interaction.");
 	});
 
 	it("resolves import specifier from the nearest package.json name", async () => {
-		const result = await runManifest({});
-		const component = Object.values(result.components.components)[0];
+		const result = await runManifest();
+		const component = Object.values(result.components.components).find(
+			(c) => c.name === "ButtonComponent",
+		);
 		expect(component?.import).toBe('import { ButtonComponent } from "@my-org/my-lib";');
 	});
 
@@ -210,14 +141,18 @@ describe("manifest generator — happy path", () => {
 				[PACKAGE_JSON_PATH]: JSON.stringify({ name: "@acme/ui-components" }),
 			},
 		});
-		const component = Object.values(result.components.components)[0];
+		const component = Object.values(result.components.components).find(
+			(c) => c.name === "ButtonComponent",
+		);
 		expect(component?.import).toBe('import { ButtonComponent } from "@acme/ui-components";');
 	});
 
 	it("falls back to relative specifier when no package.json is found", async () => {
 		mockFindPackageJson.mockReturnValue(undefined);
-		const result = await runManifest({});
-		const component = Object.values(result.components.components)[0];
+		const result = await runManifest();
+		const component = Object.values(result.components.components).find(
+			(c) => c.name === "ButtonComponent",
+		);
 		expect(component?.import).toContain("ButtonComponent");
 		expect(component?.import).toContain("../lib/button/button.component");
 	});
@@ -228,7 +163,9 @@ describe("manifest generator — happy path", () => {
 				[PACKAGE_JSON_PATH]: JSON.stringify({ version: "1.0.0" }),
 			},
 		});
-		const component = Object.values(result.components.components)[0];
+		const component = Object.values(result.components.components).find(
+			(c) => c.name === "ButtonComponent",
+		);
 		expect(component?.import).toContain("ButtonComponent");
 		expect(component?.import).toContain("../lib/button/button.component");
 	});
@@ -236,23 +173,27 @@ describe("manifest generator — happy path", () => {
 
 describe("manifest generator — stories", () => {
 	it("generates snippets for each story", async () => {
-		const result = await runManifest({});
-		const component = Object.values(result.components.components)[0];
+		const result = await runManifest();
+		const component = Object.values(result.components.components).find(
+			(c) => c.name === "ButtonComponent",
+		);
 		expect(component?.stories.length).toBeGreaterThan(0);
 	});
 
 	it("generates a snippet using the component selector", async () => {
-		const result = await runManifest({});
-		const component = Object.values(result.components.components)[0];
+		const result = await runManifest();
+		const component = Object.values(result.components.components).find(
+			(c) => c.name === "ButtonComponent",
+		);
 		const primary = component?.stories.find((s) => s.name === "Primary");
-		// loadCsf does not evaluate args statically, so snippets use the selector only.
-		// Arg bindings are tested in resolveAngularComponents.test.ts unit tests.
 		expect(primary?.snippet).toBe("<app-button></app-button>");
 	});
 
 	it("generates a snippet for every story entry", async () => {
-		const result = await runManifest({});
-		const component = Object.values(result.components.components)[0];
+		const result = await runManifest();
+		const component = Object.values(result.components.components).find(
+			(c) => c.name === "ButtonComponent",
+		);
 		const storyNames = component?.stories.map((s) => s.name);
 		expect(storyNames).toContain("Primary");
 		expect(storyNames).toContain("Disabled");
@@ -260,47 +201,90 @@ describe("manifest generator — stories", () => {
 	});
 
 	it("uses render.template when @useTemplate is present", async () => {
-		const result = await runManifest({});
-		const component = Object.values(result.components.components)[0];
+		const result = await runManifest();
+		const component = Object.values(result.components.components).find(
+			(c) => c.name === "ButtonComponent",
+		);
 		const custom = component?.stories.find((s) => s.name === "Custom Template");
-		expect(custom?.snippet).toBe('<app-button label="custom"></app-button>');
+		expect(custom?.snippet).toBe('<app-button label="custom template"></app-button>');
+	});
+});
+
+describe("manifest generator — LibBtnDirective (compound selector)", () => {
+	it("includes the directive in the manifest", async () => {
+		const result = await runManifest();
+		const directive = Object.values(result.components.components).find(
+			(c) => c.name === "LibBtnDirective",
+		);
+		expect(directive).toBeDefined();
+	});
+
+	it("attaches the compound selector", async () => {
+		const result = await runManifest();
+		const directive = Object.values(result.components.components).find(
+			(c) => c.name === "LibBtnDirective",
+		);
+		expect(directive?.selector).toBe("button[lib-btn], a[lib-btn]");
+	});
+
+	it("produces multiple snippets for compound selectors", async () => {
+		const result = await runManifest();
+		const directive = Object.values(result.components.components).find(
+			(c) => c.name === "LibBtnDirective",
+		);
+		const primary = directive?.stories.find((s) => s.name === "Primary");
+expect(primary?.snippets).toHaveLength(2);
+		expect(primary?.snippets?.[0]).toBe("<button lib-btn></button>");
+		expect(primary?.snippets?.[1]).toBe("<a lib-btn></a>");
+	});
+
+	it("attaches the directive import from the package name", async () => {
+		const result = await runManifest();
+		const directive = Object.values(result.components.components).find(
+			(c) => c.name === "LibBtnDirective",
+		);
+		expect(directive?.import).toBe('import { LibBtnDirective } from "@my-org/my-lib";');
 	});
 });
 
 describe("manifest generator — compodoc missing", () => {
 	it("returns an error when component not found in compodoc", async () => {
-		const result = await runManifest({
-			compodoc: { components: [], directives: [], pipes: [], injectables: [], classes: [] },
+		const emptyCompodoc = JSON.stringify({
+			components: [],
+			directives: [],
+			pipes: [],
+			injectables: [],
+			classes: [],
 		});
-		const component = Object.values(result.components.components)[0];
+		const result = await runManifest({
+			extraFiles: { [COMPODOC_JSON_PATH]: emptyCompodoc },
+		});
+		const component = Object.values(result.components.components).find(
+			(c) => "error" in c,
+		);
 		expect(component?.error).toBeDefined();
 		expect(component?.error?.name).toBe("Component not found in Compodoc output");
 	});
 
 	it("returns an error when no compodoc file exists", async () => {
+		// Mount only story + component files — no documentation.json
 		vol.fromJSON({
-			[BUTTON_STORY_PATH]: buttonStoriesSource,
-			[BUTTON_COMPONENT_PATH]: buttonComponentSource,
+			[BUTTON_STORY_PATH]: files["./src/stories/button.stories.ts"]!,
+			[BUTTON_COMPONENT_PATH]: files["./src/lib/button/button.component.ts"]!,
 		});
+
+		const buttonEntry = manifestEntries.find(
+			(e) => e.importPath === "./src/stories/button.stories.ts",
+		)!;
 
 		const result = await manifest(
 			{},
 			{
-				manifestEntries: [
-					{
-						id: "components-button--primary",
-						title: "Components/Button",
-						importPath: "./src/stories/button.stories.ts",
-						name: "Primary",
-						type: "story" as const,
-						subtype: "story" as const,
-						tags: [],
-					},
-				],
+				manifestEntries: [buttonEntry],
 				watch: false,
-				configDir: "/project",
-				outputDir: "/project/storybook-static",
-				cacheDir: "/project/.cache",
+				configDir: ROOT,
+				outputDir: `${ROOT}/storybook-static`,
+				cacheDir: `${ROOT}/.cache`,
 				packageJson: {},
 				presets: {} as any,
 			} as any,
@@ -320,43 +304,14 @@ describe("manifest generator — meta.component missing", () => {
       export const Primary = { args: {} };
     `;
 
-		const result = await runManifest({ storiesCode: storiesWithoutComponent });
+		const result = await runManifest({
+			extraFiles: { [BUTTON_STORY_PATH]: storiesWithoutComponent },
+			entries: manifestEntries.filter(
+				(e) => e.importPath === "./src/stories/button.stories.ts",
+			),
+		});
 		const component = Object.values(result.components.components)[0];
 		expect(component?.error).toBeDefined();
 		expect(component?.error?.name).toBe("No component found");
-	});
-});
-
-describe("manifest generator — selector variants", () => {
-	it("produces multiple snippets for compound selectors", async () => {
-		const multiSelectorCompodoc = {
-			...compodocJson,
-			components: [
-				{
-					...compodocJson.components[0]!,
-					selector: "button[lib-btn], a[lib-btn]",
-					inputsClass: [],
-					outputsClass: [],
-				},
-			],
-		};
-
-		const storiesSimple = dedent`
-      import type { Meta, StoryObj } from '@storybook/angular';
-      import { ButtonComponent } from '../lib/button/button.component';
-      const meta: Meta<ButtonComponent> = { title: 'Components/Button', component: ButtonComponent };
-      export default meta;
-      export const Primary: StoryObj<ButtonComponent> = {};
-    `;
-
-		const result = await runManifest({
-			storiesCode: storiesSimple,
-			compodoc: multiSelectorCompodoc,
-		});
-		const component = Object.values(result.components.components)[0];
-		const primary = component?.stories.find((s) => s.name === "Primary");
-		expect(primary?.snippets).toHaveLength(2);
-		expect(primary?.snippets?.[0]).toBe("<button lib-btn></button>");
-		expect(primary?.snippets?.[1]).toBe("<a lib-btn></a>");
 	});
 });
