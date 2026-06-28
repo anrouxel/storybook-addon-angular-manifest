@@ -57,7 +57,7 @@
     "@commitlint/cli": "^21.1.0",
     "@commitlint/config-conventional": "^21.1.0",
     "@commitlint/types": "^21.1.0",
-    "@storybook/angular-vite": "10.5.0-alpha.9",
+    "@storybook/angular-vite": "next",
     "@types/node": "^26.0.1",
     "lefthook": "^2.1.9",
     "memfs": "^4.57.8",

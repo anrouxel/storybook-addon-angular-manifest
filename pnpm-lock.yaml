@@ -43,7 +43,7 @@ importers:
         specifier: ^21.1.0
         version: 21.1.0
       '@storybook/angular-vite':
-        specifier: 10.5.0-alpha.9
+        specifier: next
         version: 10.5.0-alpha.9(42d376708c5084120aaddede5a9a78b8)
       '@types/node':
         specifier: ^26.0.1
