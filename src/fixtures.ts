@@ -1,7 +1,7 @@
 /**
  * Shared fixture data for generator tests.
  *
- * Exports a virtual filesystem (`files`) built from real source files in
+ * Exports a virtual filesystem (`fsMocks`) built from real source files in
  * __testfixtures__/, and a pre-built story index (`storyIndex`) that mirrors
  * a realistic Angular library project.
  *
@@ -21,7 +21,7 @@ import libBtnStoriesSource from "./__testfixtures__/lib-btn/lib-btn.stories.ts?r
 // Virtual filesystem — passed to vol.fromJSON() in tests
 // ---------------------------------------------------------------------------
 
-export const files: Record<string, string> = {
+export const fsMocks: Record<string, string> = {
 	// ── Project root ──────────────────────────────────────────────────────────
 	"./package.json": JSON.stringify({
 		name: "@my-org/my-lib",

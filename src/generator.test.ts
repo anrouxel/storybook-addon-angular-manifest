@@ -24,7 +24,7 @@ vi.mock("empathic/package", () => ({
 }));
 
 import type { AngularComponentManifest } from "./buildAngularComponentManifest";
-import { files, manifestEntries } from "./fixtures";
+import { fsMocks, manifestEntries } from "./fixtures";
 import { manifest } from "./generator";
 import {
 	COMPODOC_JSON_PATH,
@@ -66,7 +66,7 @@ async function runManifest(
 
 	if (Object.keys(extraFiles).length > 0) {
 		vol.reset();
-		vol.fromJSON({ ...files, ...extraFiles }, ROOT);
+		vol.fromJSON({ ...fsMocks, ...extraFiles }, ROOT);
 		mockFindPackageJson.mockReturnValue(PACKAGE_JSON_PATH);
 	}
 
@@ -272,8 +272,8 @@ describe("manifest generator — compodoc missing", () => {
 	});
 
 	it("returns an error when no compodoc file exists", async () => {
-		const buttonStories = files["./src/button/button.stories.ts"];
-		const buttonComponent = files["./src/button/button.component.ts"];
+		const buttonStories = fsMocks["./src/button/button.stories.ts"];
+		const buttonComponent = fsMocks["./src/button/button.component.ts"];
 		if (!buttonStories || !buttonComponent) throw new Error("missing fixtures");
 
 		vol.reset();

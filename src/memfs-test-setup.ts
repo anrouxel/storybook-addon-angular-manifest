@@ -23,7 +23,7 @@ import { vol } from "memfs";
 import { vi } from "vitest";
 
 import { invalidateCompodocCache } from "./compodocExtractor";
-import { files } from "./fixtures";
+import { fsMocks } from "./fixtures";
 import { invalidateCache } from "./utils";
 
 export const ROOT = "/project";
@@ -45,5 +45,5 @@ export function setupMemfsMocks(
 
 	// Mount fixture files at ROOT so relative import paths in fixture source
 	// files resolve correctly inside the virtual filesystem.
-	vol.fromJSON({ ...files, ...extraFiles }, ROOT);
+	vol.fromJSON({ ...fsMocks, ...extraFiles }, ROOT);
 }
