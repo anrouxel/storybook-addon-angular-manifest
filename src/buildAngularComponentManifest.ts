@@ -14,6 +14,41 @@ import type {
 	ResolvedAngularStoryEntry,
 } from "./resolveAngularComponents.ts";
 
+/** Optimised representation of a single Angular input for manifest consumers. */
+export interface CompodocInputSummary {
+	name: string;
+	type: string;
+	optional: boolean;
+	required?: boolean;
+	defaultValue?: string;
+	description?: string;
+}
+
+/** Optimised representation of a single Angular output for manifest consumers. */
+export interface CompodocOutputSummary {
+	name: string;
+	type: string;
+	description?: string;
+}
+
+/**
+ * Lean summary of Compodoc data for a component or directive.
+ *
+ * Only the fields that are relevant to manifest consumers (AI tools, HTML debugger, etc.)
+ * are included. Internal Compodoc details such as templates, style URLs, host bindings,
+ * class properties, methods, and decorators are deliberately excluded.
+ */
+export interface CompodocComponentSummary {
+	name: string;
+	type: "component" | "directive";
+	selector?: string;
+	standalone?: boolean;
+	changeDetection?: string;
+	inputs: CompodocInputSummary[];
+	outputs: CompodocOutputSummary[];
+	description?: string;
+}
+
 /**
  * Angular component manifest with Compodoc-specific docgen data attached.
  *
@@ -21,8 +56,8 @@ import type {
  * so that consumers (e.g. the HTML debugger, AI tools) can render rich documentation.
  */
 export interface AngularComponentManifest extends ComponentManifest {
-	/** Full Compodoc component/directive entry. */
-	compodoc?: Component | Directive;
+	/** Optimised Compodoc summary — only public API fields, no internal implementation details. */
+	compodoc?: CompodocComponentSummary;
 	/** `true` for standalone components/directives/pipes (Compodoc 2.0). */
 	standalone?: boolean;
 	/** Change detection strategy, e.g. `"ChangeDetectionStrategy.OnPush"`. */
@@ -32,6 +67,40 @@ export interface AngularComponentManifest extends ComponentManifest {
 	/** Angular story entries with optional multi-snippet support. */
 	stories: ResolvedAngularStoryEntry[];
 	[key: string]: unknown;
+}
+
+/**
+ * Build a lean {@link CompodocComponentSummary} from a raw Compodoc component/directive entry.
+ *
+ * Keeps only the fields that manifest consumers actually need (selector, inputs/outputs
+ * with their public API metadata, standalone flag, change detection, description).
+ * Strips internal details: template source, style URLs, host bindings/listeners,
+ * class properties, methods, decorators, and raw JSDoc tags.
+ */
+function buildCompodocSummary(
+	data: Component | Directive,
+): CompodocComponentSummary {
+	return {
+		name: data.name,
+		type: data.type as "component" | "directive",
+		selector: data.selector,
+		standalone: data.standalone,
+		changeDetection: data.changeDetection,
+		inputs: data.inputsClass.map((p) => ({
+			name: p.name,
+			type: p.type,
+			optional: p.optional,
+			...(p.required !== undefined && { required: p.required }),
+			...(p.defaultValue !== undefined && { defaultValue: p.defaultValue }),
+			description: p.rawdescription || p.description,
+		})),
+		outputs: data.outputsClass.map((p) => ({
+			name: p.name,
+			type: p.type,
+			description: p.rawdescription || p.description,
+		})),
+		description: data.rawdescription || data.description,
+	};
 }
 
 /**
@@ -155,7 +224,7 @@ export function buildAngularComponentManifest({
 		description,
 		summary,
 		jsDocTags,
-		compodoc: compodocData as Component | Directive,
+		compodoc: buildCompodocSummary(compodocData as Component | Directive),
 		standalone: dir?.standalone,
 		changeDetection: dir?.changeDetection,
 		selector: dir?.selector,
