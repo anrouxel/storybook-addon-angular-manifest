@@ -180,13 +180,40 @@ describe("manifest generator — stories", () => {
 		expect(component?.stories.length).toBeGreaterThan(0);
 	});
 
-	it("generates a snippet using the component selector", async () => {
+	it("generates a snippet using the component selector with story args", async () => {
 		const result = await runManifest();
 		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
 		const primary = component?.stories.find((s) => s.name === "Primary");
-		expect(primary?.snippet).toBe("<app-button></app-button>");
+		// Primary has args: { label: "Click me", disabled: false }
+		expect(primary?.snippet).toBe(
+			'<app-button label="Click me" [disabled]="false"></app-button>',
+		);
+	});
+
+	it("generates a correct snippet for the Disabled story", async () => {
+		const result = await runManifest();
+		const component = getComponents(result).find(
+			(c) => c.name === "ButtonComponent",
+		);
+		const disabled = component?.stories.find((s) => s.name === "Disabled");
+		// Disabled has args: { label: "Click me", disabled: true } — true renders as bare attribute
+		expect(disabled?.snippet).toBe(
+			'<app-button label="Click me" disabled></app-button>',
+		);
+	});
+
+	it("generates a correct snippet for the WithOutput story", async () => {
+		const result = await runManifest();
+		const component = getComponents(result).find(
+			(c) => c.name === "ButtonComponent",
+		);
+		const withOutput = component?.stories.find((s) => s.name === "With Output");
+		// WithOutput has args: { clicked: undefined } — output renders as event binding
+		expect(withOutput?.snippet).toBe(
+			'<app-button (clicked)="handleEvent($event)"></app-button>',
+		);
 	});
 
 	it("generates a snippet for every story entry", async () => {
@@ -197,6 +224,7 @@ describe("manifest generator — stories", () => {
 		const storyNames = component?.stories.map((s) => s.name);
 		expect(storyNames).toContain("Primary");
 		expect(storyNames).toContain("Disabled");
+		expect(storyNames).toContain("With Output");
 		expect(storyNames).toContain("Custom Template");
 	});
 
@@ -247,6 +275,22 @@ describe("manifest generator — LibBtnDirective (compound selector)", () => {
 		);
 		expect(directive?.import).toBe(
 			'import { LibBtnDirective } from "@my-org/my-lib";',
+		);
+	});
+
+	it("generates correct compound snippets for the Secondary story with args", async () => {
+		const result = await runManifest();
+		const directive = getComponents(result).find(
+			(c) => c.name === "LibBtnDirective",
+		);
+		const secondary = directive?.stories.find((s) => s.name === "Secondary");
+		// Secondary has args: { variant: "secondary" }
+		expect(secondary?.snippets).toHaveLength(2);
+		expect(secondary?.snippets?.[0]).toBe(
+			'<button lib-btn variant="secondary"></button>',
+		);
+		expect(secondary?.snippets?.[1]).toBe(
+			'<a lib-btn variant="secondary"></a>',
 		);
 	});
 });

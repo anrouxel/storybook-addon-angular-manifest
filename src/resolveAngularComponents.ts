@@ -121,7 +121,12 @@ export function extractAngularStorySnippets(
 				const finalDescription =
 					(tags?.describe?.[0] || tags?.desc?.[0]) ?? description;
 
-				const args = (story as any).args as Record<string, unknown> | undefined;
+				// loadCsf from storybook/internal/csf-tools does not populate story.args with
+				// static literal values from the source file; fall back to AST extraction.
+				const loadedArgs = (story as any).args as
+					| Record<string, unknown>
+					| undefined;
+				const args = loadedArgs ?? extractStoryArgs(sourceFile, storyExport);
 
 				// @useTemplate opt-in: use render.template as snippet instead of Compodoc-generated one
 				const useTemplate = "useTemplate" in (tags ?? {});
@@ -285,6 +290,86 @@ function parseSelectorPart(part: string): ParsedSelectorPart {
 }
 
 /**
+ * Parse a TypeScript expression into a static primitive value.
+ *
+ * Handles string, number, boolean, null, and the `undefined` identifier.
+ * Returns `undefined` for complex expressions (functions, arrays, objects, etc.)
+ * so that callers can distinguish "present but not a simple literal" from
+ * "key not present at all" when building bindings.
+ */
+function parseStaticLiteralValue(node: ts.Expression): unknown {
+	if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+		return node.text;
+	if (node.kind === ts.SyntaxKind.TrueKeyword) return true;
+	if (node.kind === ts.SyntaxKind.FalseKeyword) return false;
+	if (ts.isNumericLiteral(node)) return Number(node.text);
+	if (node.kind === ts.SyntaxKind.NullKeyword) return null;
+	if (ts.isIdentifier(node) && node.text === "undefined") return undefined;
+	if (
+		ts.isPrefixUnaryExpression(node) &&
+		node.operator === ts.SyntaxKind.MinusToken &&
+		ts.isNumericLiteral(node.operand)
+	)
+		return -Number(node.operand.text);
+	// Complex expression (function, array, object, reference…) — not statically evaluable
+	return undefined;
+}
+
+/**
+ * Statically extract the `args` object from a story export via TypeScript AST.
+ *
+ * `loadCsf` from storybook/internal/csf-tools does not populate `_stories[name].args`
+ * with literal values from the source file. This function fills that gap by walking
+ * the AST of the raw story code.
+ *
+ * Literal values (string, number, boolean, null, undefined) are resolved.
+ * Complex expressions (functions, arrays, objects) become `undefined` in the result —
+ * the key is still present so that output bindings are rendered even when the arg value
+ * is a function or explicit `undefined`.
+ *
+ * Returns `undefined` when the story export has no `args` property.
+ */
+function extractStoryArgs(
+	sourceFile: ts.SourceFile,
+	storyExportName: string,
+): Record<string, unknown> | undefined {
+	for (const statement of sourceFile.statements) {
+		if (!ts.isVariableStatement(statement)) continue;
+
+		const decl = statement.declarationList.declarations.find(
+			(d) =>
+				ts.isIdentifier(d.name) &&
+				(d.name as ts.Identifier).text === storyExportName,
+		);
+		if (!decl?.initializer || !ts.isObjectLiteralExpression(decl.initializer))
+			continue;
+
+		const argsProp = decl.initializer.properties.find(
+			(p): p is ts.PropertyAssignment =>
+				ts.isPropertyAssignment(p) &&
+				ts.isIdentifier(p.name) &&
+				(p.name as ts.Identifier).text === "args",
+		);
+		if (!argsProp) return undefined;
+		if (!ts.isObjectLiteralExpression(argsProp.initializer)) return undefined;
+
+		const result: Record<string, unknown> = {};
+		for (const prop of argsProp.initializer.properties) {
+			if (!ts.isPropertyAssignment(prop)) continue;
+			const key = ts.isIdentifier(prop.name)
+				? (prop.name as ts.Identifier).text
+				: ts.isStringLiteral(prop.name)
+					? (prop.name as ts.StringLiteral).text
+					: undefined;
+			if (!key) continue;
+			result[key] = parseStaticLiteralValue(prop.initializer);
+		}
+		return result;
+	}
+	return undefined;
+}
+
+/**
  * Build the attribute bindings string for Angular inputs and outputs.
  *
  * Inputs:
@@ -292,10 +377,11 @@ function parseSelectorPart(part: string): ParsedSelectorPart {
  * - `boolean false` → property binding `[disabled]="false"`
  * - `string`        → plain attribute  `label="Click me"`
  * - other           → property binding `[count]="42"`
+ * - `undefined`     → skipped (value not statically known)
  * - `required` signal with no arg value → placeholder `[name]="/* required *&#47;"`
  *
  * Outputs (from `outputsClass`):
- * - Always rendered as `(eventName)="handleEvent($event)"`
+ * - Always rendered as `(eventName)="handleEvent($event)"` regardless of arg value
  */
 function buildBindings(
 	inputs: import("./compodocTypes").Property[],
@@ -316,10 +402,11 @@ function buildBindings(
 	if (args) {
 		for (const [key, value] of Object.entries(args)) {
 			if (outputNames.has(key)) {
-				// Output binding — ignore the arg value, just show the event binding syntax
+				// Output binding — arg value is ignored, always render event binding syntax
 				bindings.push(`(${key})="handleEvent($event)"`);
 			} else if (inputByName.has(key)) {
-				if (value === true) {
+				if (value === undefined) {
+				} else if (value === true) {
 					bindings.push(key);
 				} else if (value === false) {
 					bindings.push(`[${key}]="false"`);
