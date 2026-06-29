@@ -69,7 +69,7 @@
     "vitest": "^4.1.9"
   },
   "peerDependencies": {
-    "storybook": "10.5.0"
+    "storybook": "next"
   },
   "publishConfig": {
     "access": "public"
