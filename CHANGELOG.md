@@ -1,5 +1,15 @@
 # @anrouxel/storybook-addon-angular-manifest
 
+## 1.0.0-next.1
+
+### Minor Changes
+
+- [`1ce54ed`](https://github.com/anrouxel/storybook-addon-angular-manifest/commit/1ce54eddab7088c907c3d34ab5f924f5a516a238) Thanks [@anrouxel](https://github.com/anrouxel)! - feat: add optimized Compodoc summaries for Angular components and enhance tests
+
+### Patch Changes
+
+- [`dc1489c`](https://github.com/anrouxel/storybook-addon-angular-manifest/commit/dc1489c29672cf732f26c135d93fa38bb7681826) Thanks [@anrouxel](https://github.com/anrouxel)! - fix: extract args for Angular story snippets
+
 ## 1.0.0-next.0
 
 ### Major Changes
