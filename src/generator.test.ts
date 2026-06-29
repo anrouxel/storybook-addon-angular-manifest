@@ -295,6 +295,91 @@ describe("manifest generator — LibBtnDirective (compound selector)", () => {
 	});
 });
 
+describe("manifest generator — compodoc summary", () => {
+	it("exposes only the relevant top-level fields for ButtonComponent", async () => {
+		const result = await runManifest();
+		const component = getComponents(result).find(
+			(c) => c.name === "ButtonComponent",
+		);
+		const compodoc = component?.compodoc as Record<string, unknown> | undefined;
+		expect(compodoc).toBeDefined();
+		expect(compodoc?.name).toBe("ButtonComponent");
+		expect(compodoc?.type).toBe("component");
+		expect(compodoc?.selector).toBe("app-button");
+		expect(compodoc?.standalone).toBe(true);
+		expect(compodoc?.description).toBe("Primary UI component for user interaction.");
+
+		// Internal Compodoc fields must be absent
+		expect(compodoc).not.toHaveProperty("template");
+		expect(compodoc).not.toHaveProperty("templateUrl");
+		expect(compodoc).not.toHaveProperty("styleUrls");
+		expect(compodoc).not.toHaveProperty("propertiesClass");
+		expect(compodoc).not.toHaveProperty("methodsClass");
+		expect(compodoc).not.toHaveProperty("hostBindings");
+		expect(compodoc).not.toHaveProperty("hostListeners");
+		expect(compodoc).not.toHaveProperty("hostDirectives");
+		expect(compodoc).not.toHaveProperty("rawdescription");
+	});
+
+	it("exposes inputs with only their public API fields", async () => {
+		const result = await runManifest();
+		const component = getComponents(result).find(
+			(c) => c.name === "ButtonComponent",
+		);
+		const compodoc = component?.compodoc as any;
+		const labelInput = compodoc?.inputs?.find(
+			(i: { name: string }) => i.name === "label",
+		);
+		expect(labelInput).toMatchObject({
+			name: "label",
+			type: "string",
+			optional: true,
+			defaultValue: "'Click me'",
+			description: "Text displayed inside the button.",
+		});
+
+		// Internal Property fields must be absent
+		expect(labelInput).not.toHaveProperty("decorators");
+		expect(labelInput).not.toHaveProperty("jsdoctags");
+		expect(labelInput).not.toHaveProperty("actualName");
+		expect(labelInput).not.toHaveProperty("rawdescription");
+	});
+
+	it("exposes outputs with only their public API fields", async () => {
+		const result = await runManifest();
+		const component = getComponents(result).find(
+			(c) => c.name === "ButtonComponent",
+		);
+		const compodoc = component?.compodoc as any;
+		const clickedOutput = compodoc?.outputs?.find(
+			(o: { name: string }) => o.name === "clicked",
+		);
+		expect(clickedOutput).toMatchObject({
+			name: "clicked",
+			type: "EventEmitter<void>",
+			description: "Emitted when the user clicks the button.",
+		});
+
+		// Internal Property fields must be absent
+		expect(clickedOutput).not.toHaveProperty("decorators");
+		expect(clickedOutput).not.toHaveProperty("jsdoctags");
+		expect(clickedOutput).not.toHaveProperty("rawdescription");
+		expect(clickedOutput).not.toHaveProperty("optional");
+	});
+
+	it("uses renamed inputs/outputs keys instead of inputsClass/outputsClass", async () => {
+		const result = await runManifest();
+		const component = getComponents(result).find(
+			(c) => c.name === "ButtonComponent",
+		);
+		const compodoc = component?.compodoc as any;
+		expect(compodoc).toHaveProperty("inputs");
+		expect(compodoc).toHaveProperty("outputs");
+		expect(compodoc).not.toHaveProperty("inputsClass");
+		expect(compodoc).not.toHaveProperty("outputsClass");
+	});
+});
+
 describe("manifest generator — compodoc missing", () => {
 	it("returns an error when component not found in compodoc", async () => {
 		const emptyCompodoc = JSON.stringify({
