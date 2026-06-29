@@ -479,6 +479,148 @@ export const WithRender = {
 	});
 });
 
+// ---------------------------------------------------------------------------
+// extractAngularStorySnippets — static AST args extraction
+// (when loadCsf does not populate _stories[name].args)
+// ---------------------------------------------------------------------------
+
+describe("extractAngularStorySnippets — static AST arg extraction", () => {
+	function makeCsfWithoutStoredArgs(
+		code: string,
+		stories: Record<string, { id: string; name: string }>,
+	): ParsedCsf {
+		return makeParsedCsf({
+			_code: code,
+			_stories: Object.fromEntries(
+				Object.entries(stories).map(([k, v]) => [k, v as any]),
+			),
+			_storyStatements: Object.fromEntries(
+				Object.keys(stories).map((k) => [k, undefined as any]),
+			),
+		});
+	}
+
+	it("extracts string arg from AST when _stories has no args", () => {
+		const csf = makeCsfWithoutStoredArgs(
+			"export const WithLabel = { args: { label: 'Hello' } };",
+			{ WithLabel: { id: "btn--with-label", name: "With Label" } },
+		);
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
+		expect(entry?.snippet).toContain('label="Hello"');
+	});
+
+	it("extracts boolean false arg from AST and renders property binding", () => {
+		const csf = makeCsfWithoutStoredArgs(
+			"export const Enabled = { args: { disabled: false } };",
+			{ Enabled: { id: "btn--enabled", name: "Enabled" } },
+		);
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
+		expect(entry?.snippet).toContain('[disabled]="false"');
+	});
+
+	it("extracts boolean true arg from AST and renders bare attribute", () => {
+		const csf = makeCsfWithoutStoredArgs(
+			"export const Disabled = { args: { disabled: true } };",
+			{ Disabled: { id: "btn--disabled", name: "Disabled" } },
+		);
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
+		expect(entry?.snippet).toContain(" disabled");
+		expect(entry?.snippet).not.toContain("[disabled]");
+	});
+
+	it("extracts number arg from AST and renders property binding", () => {
+		const csf = makeCsfWithoutStoredArgs(
+			"export const WithCount = { args: { count: 42 } };",
+			{ WithCount: { id: "btn--with-count", name: "With Count" } },
+		);
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
+		expect(entry?.snippet).toContain('[count]="42"');
+	});
+
+	it("renders output binding when arg value is undefined in AST", () => {
+		const csf = makeCsfWithoutStoredArgs(
+			"export const WithOutput = { args: { clicked: undefined } };",
+			{ WithOutput: { id: "btn--with-output", name: "With Output" } },
+		);
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
+		expect(entry?.snippet).toContain('(clicked)="handleEvent($event)"');
+	});
+
+	it("renders output binding when arg value is a function expression", () => {
+		const csf = makeCsfWithoutStoredArgs(
+			"export const WithOutput = { args: { clicked: () => {} } };",
+			{ WithOutput: { id: "btn--with-output", name: "With Output" } },
+		);
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
+		expect(entry?.snippet).toContain('(clicked)="handleEvent($event)"');
+	});
+
+	it("skips input binding when arg value is a non-literal expression", () => {
+		const csf = makeCsfWithoutStoredArgs(
+			"export const Dynamic = { args: { label: someVariable } };",
+			{ Dynamic: { id: "btn--dynamic", name: "Dynamic" } },
+		);
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
+		// Can't resolve label statically — should not render any label binding
+		expect(entry?.snippet).not.toContain("label=");
+		expect(entry?.snippet).not.toContain("[label]");
+	});
+
+	it("produces no bindings when story has no args property in AST", () => {
+		const csf = makeCsfWithoutStoredArgs("export const Primary = {};", {
+			Primary: { id: "btn--primary", name: "Primary" },
+		});
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
+		expect(entry?.snippet).toBe("<app-button></app-button>");
+	});
+
+	it("extracts multiple args from AST and renders all bindings", () => {
+		const csf = makeCsfWithoutStoredArgs(
+			"export const Full = { args: { label: 'Click me', disabled: false } };",
+			{ Full: { id: "btn--full", name: "Full" } },
+		);
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
+		expect(entry?.snippet).toContain('label="Click me"');
+		expect(entry?.snippet).toContain('[disabled]="false"');
+	});
+});
+
 describe("extractAngularStorySnippets — filterStoryIds", () => {
 	it("only returns entries matching the filter set", () => {
 		const csf = makeParsedCsf({
