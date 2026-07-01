@@ -1,5 +1,11 @@
 # @anrouxel/storybook-addon-angular-manifest
 
+## 1.0.0-next.4
+
+### Patch Changes
+
+- [#17](https://github.com/anrouxel/storybook-addon-angular-manifest/pull/17) [`bfdcfa9`](https://github.com/anrouxel/storybook-addon-angular-manifest/commit/bfdcfa91a179d343e891aa14069172a5c57289a2) Thanks [@anrouxel](https://github.com/anrouxel)! - feat: remove selector-variant root tag detection
+
 ## 1.0.0-next.3
 
 ### Minor Changes
