@@ -64,7 +64,7 @@ export interface AngularComponentManifest extends ComponentManifest {
 	changeDetection?: string;
 	/** Raw Angular selector, e.g. `"button[lib-btn], a[lib-btn]"`. */
 	selector?: string;
-	/** Angular story entries with optional multi-snippet support. */
+	/** Angular story entries with generated template snippets. */
 	stories: ResolvedAngularStoryEntry[];
 	[key: string]: unknown;
 }

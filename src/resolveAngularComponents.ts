@@ -33,14 +33,12 @@ export interface ResolvedAngularStory {
 export interface ResolvedAngularStoryEntry {
 	id: string;
 	name: string;
-	/** Primary snippet (first selector variant). */
-	snippet?: string;
 	/**
-	 * One snippet per selector variant when the Angular selector contains multiple
-	 * comma-separated parts (e.g. `"button[lib-btn], a[lib-btn]"`).
-	 * Always populated when `snippet` is defined.
+	 * Generated template snippet. For components whose selector has multiple
+	 * comma-separated variants (e.g. `"button[lib-btn], a[lib-btn]"`), this is the
+	 * first variant — the full selector is available on the component's `selector` field.
 	 */
-	snippets?: string[];
+	snippet?: string;
 	description?: string;
 	summary?: string;
 	error?: { name: string; message: string };
@@ -128,21 +126,30 @@ export function extractAngularStorySnippets(
 					| undefined;
 				const args = loadedArgs ?? extractStoryArgs(sourceFile, storyExport);
 
-				// @useTemplate opt-in: use render.template as snippet instead of Compodoc-generated one
+				// @useTemplate opt-in: use render.template verbatim as the snippet.
+				// Without the tag, a render.template (if any) is only used to detect which
+				// selector variant (host element) the story targets — the snippet itself is
+				// still auto-generated from Compodoc + args, same as a story with no render.
+				const renderTemplate = extractStoryRenderTemplate(
+					sourceFile,
+					storyExport,
+				);
 				const useTemplate = "useTemplate" in (tags ?? {});
-				const renderTemplate = useTemplate
-					? extractStoryRenderTemplate(sourceFile, storyExport)
-					: undefined;
-				const snippets = renderTemplate
-					? [renderTemplate]
-					: buildAngularSnippets(selector, inputs, outputs, args);
-				const snippet = snippets?.[0];
+				const snippet =
+					useTemplate && renderTemplate
+						? renderTemplate
+						: buildAngularSnippet(
+								selector,
+								inputs,
+								outputs,
+								args,
+								extractRootTagName(renderTemplate),
+							);
 
 				return {
 					id: story.id,
 					name,
 					snippet,
-					snippets: snippets?.length ? snippets : undefined,
 					description: finalDescription?.trim(),
 					summary: tags.summary?.[0],
 				};
@@ -252,6 +259,20 @@ function extractStringLiteralText(
 		return node.getText(sourceFile);
 	}
 	return undefined;
+}
+
+/**
+ * Extract the root element/component tag name from a template string, e.g.
+ * `"<a storybookButton primary>{{ label }}</a>"` → `"a"`.
+ *
+ * Used to detect which selector variant a story's own `render.template` targets,
+ * without treating the template itself as the snippet.
+ */
+function extractRootTagName(template: string | undefined): string | undefined {
+	return template
+		?.trim()
+		.match(/^<([a-zA-Z][\w-]*)/)?.[1]
+		?.toLowerCase();
 }
 
 // ---------------------------------------------------------------------------
@@ -444,28 +465,34 @@ function renderSnippet(
 }
 
 /**
- * Generate one Angular template snippet per selector variant.
+ * Generate an Angular template snippet from the component's selector.
  *
- * A selector like `"button[lib-btn], a[lib-btn]"` produces two snippets so
- * consumers can show all valid host-element usages.
+ * A selector like `"button[lib-btn], a[lib-btn]"` has multiple comma-separated
+ * variants. When `preferredHost` (detected from the story's own `render.template`,
+ * if any) matches one of them, that variant is used; otherwise the first one is
+ * (the full selector is already exposed once on the component's `selector` field).
  *
  * Returns `undefined` when the selector is missing (no guess is attempted).
  */
-function buildAngularSnippets(
+function buildAngularSnippet(
 	selector: string | undefined,
 	inputs: import("./compodocTypes").Property[],
 	outputs: import("./compodocTypes").Property[],
 	args: Record<string, unknown> | undefined,
-): string[] | undefined {
+	preferredHost?: string,
+): string | undefined {
 	if (!selector) {
 		return undefined;
 	}
 
 	const bindings = buildBindings(inputs, outputs, args);
+	const variants = selector.split(",").map((part) => parseSelectorPart(part));
+	const chosen =
+		(preferredHost && variants.find((v) => v.element === preferredHost)) ||
+		variants[0] ||
+		parseSelectorPart(selector);
 
-	return selector
-		.split(",")
-		.map((part) => renderSnippet(parseSelectorPart(part), bindings));
+	return renderSnippet(chosen, bindings);
 }
 
 // ---------------------------------------------------------------------------
