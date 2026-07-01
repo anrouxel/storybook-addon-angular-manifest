@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { ParsedCsf } from "./resolveAngularComponents";
 import {
 	extractAngularStorySnippets,
+	extractStoryDocsSourceCode,
 	extractStoryRenderTemplate,
 } from "./resolveAngularComponents";
 
@@ -100,6 +101,70 @@ describe("extractStoryRenderTemplate", () => {
 		const result = extractStoryRenderTemplate(source, "Dynamic");
 		expect(result).toContain("<app-button");
 		expect(result).toContain("args.label");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// extractStoryDocsSourceCode
+// ---------------------------------------------------------------------------
+
+describe("extractStoryDocsSourceCode", () => {
+	it("extracts parameters.docs.source.code as a template literal", () => {
+		const source = makeSourceFile(`
+      export const Primary = {
+        parameters: {
+          docs: { source: { code: \`<app-button></app-button>\` } },
+        },
+      };
+    `);
+		expect(extractStoryDocsSourceCode(source, "Primary")).toBe(
+			"<app-button></app-button>",
+		);
+	});
+
+	it("extracts parameters.docs.source.code as a string literal", () => {
+		const source = makeSourceFile(`
+      export const Primary = {
+        parameters: {
+          docs: { source: { code: '<app-button></app-button>' } },
+        },
+      };
+    `);
+		expect(extractStoryDocsSourceCode(source, "Primary")).toBe(
+			"<app-button></app-button>",
+		);
+	});
+
+	it("returns undefined when parameters is missing", () => {
+		const source = makeSourceFile(`
+      export const Primary = { args: { label: 'Click' } };
+    `);
+		expect(extractStoryDocsSourceCode(source, "Primary")).toBeUndefined();
+	});
+
+	it("returns undefined when parameters.docs is missing", () => {
+		const source = makeSourceFile(`
+      export const Primary = { parameters: {} };
+    `);
+		expect(extractStoryDocsSourceCode(source, "Primary")).toBeUndefined();
+	});
+
+	it("returns undefined when parameters.docs.source.code is missing", () => {
+		const source = makeSourceFile(`
+      export const Primary = {
+        parameters: { docs: { source: {} } },
+      };
+    `);
+		expect(extractStoryDocsSourceCode(source, "Primary")).toBeUndefined();
+	});
+
+	it("returns undefined for unknown story export name", () => {
+		const source = makeSourceFile(`
+      export const Primary = {
+        parameters: { docs: { source: { code: \`<app-button></app-button>\` } } },
+      };
+    `);
+		expect(extractStoryDocsSourceCode(source, "Secondary")).toBeUndefined();
 	});
 });
 
@@ -498,6 +563,51 @@ export const WithRender = {
 		expect(entry?.snippet).toContain("app-button");
 		expect(entry?.snippet).toContain('label="Click"');
 		expect(entry?.snippet).not.toContain("IGNORED");
+	});
+
+	it("prefers parameters.docs.source.code over render.template when both are present", () => {
+		const code = `
+export default { title: 'Button', component: 'ButtonComponent' };
+
+/** @useTemplate */
+export const WithDocsSource = {
+  render: (args) => ({ template: \`<app-button label="IGNORED"></app-button>\` }),
+  parameters: {
+    docs: {
+      source: {
+        code: \`<app-button label="from docs"></app-button>\`,
+      },
+    },
+  },
+};
+`;
+		const csf = loadCsf(code, { makeTitle: () => "Button" }).parse();
+
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
+		expect(entry?.snippet).toBe('<app-button label="from docs"></app-button>');
+	});
+
+	it("falls back to render.template when @useTemplate is present but no docs.source.code is set", () => {
+		const code = `
+export default { title: 'Button', component: 'ButtonComponent' };
+
+/** @useTemplate */
+export const WithTemplateOnly = {
+  render: (args) => ({ template: \`<app-button label="custom"></app-button>\` }),
+};
+`;
+		const csf = loadCsf(code, { makeTitle: () => "Button" }).parse();
+
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocButton,
+			"ButtonComponent",
+		);
+		expect(entry?.snippet).toBe('<app-button label="custom"></app-button>');
 	});
 });
 

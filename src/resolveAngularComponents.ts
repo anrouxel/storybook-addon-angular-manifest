@@ -126,7 +126,9 @@ export function extractAngularStorySnippets(
 					| undefined;
 				const args = loadedArgs ?? extractStoryArgs(sourceFile, storyExport);
 
-				// @useTemplate opt-in: use render.template verbatim as the snippet.
+				// @useTemplate opt-in: use the story's parameters.docs.source.code verbatim as
+				// the snippet — the same code Storybook's "Show code" panel would display —
+				// falling back to render.template when no docs.source.code is set.
 				// Without the tag, a render.template (if any) is only used to detect which
 				// selector variant (host element) the story targets — the snippet itself is
 				// still auto-generated from Compodoc + args, same as a story with no render.
@@ -134,10 +136,15 @@ export function extractAngularStorySnippets(
 					sourceFile,
 					storyExport,
 				);
+				const docsSourceCode = extractStoryDocsSourceCode(
+					sourceFile,
+					storyExport,
+				);
+				const templateOverride = docsSourceCode ?? renderTemplate;
 				const useTemplate = "useTemplate" in (tags ?? {});
 				const snippet =
-					useTemplate && renderTemplate
-						? renderTemplate
+					useTemplate && templateOverride
+						? templateOverride
 						: buildAngularSnippet(
 								selector,
 								inputs,
@@ -181,6 +188,55 @@ export function extractStoryRenderTemplate(
 	sourceFile: ts.SourceFile,
 	storyExportName: string,
 ): string | undefined {
+	const storyObject = findStoryObjectLiteral(sourceFile, storyExportName);
+	if (!storyObject) return undefined;
+
+	const renderProp = findObjectProperty(storyObject, "render");
+	if (!renderProp) return undefined;
+	if (!ts.isArrowFunction(renderProp) && !ts.isFunctionExpression(renderProp))
+		return undefined;
+
+	const returnObj = resolveRenderReturnObject(renderProp);
+	if (!returnObj) return undefined;
+
+	const templateProp = findObjectProperty(returnObj, "template");
+	if (!templateProp) return undefined;
+
+	return extractStringLiteralText(templateProp, sourceFile);
+}
+
+/**
+ * Extract a story's `parameters.docs.source.code` string via TypeScript AST — i.e. the same
+ * code Storybook's Docs "Show code" panel would display when that parameter is set explicitly.
+ *
+ * Returns `undefined` when the story has no `parameters.docs.source.code`, or when any part of
+ * that path isn't a plain object literal / string literal (computed values aren't evaluated).
+ */
+export function extractStoryDocsSourceCode(
+	sourceFile: ts.SourceFile,
+	storyExportName: string,
+): string | undefined {
+	const storyObject = findStoryObjectLiteral(sourceFile, storyExportName);
+	if (!storyObject) return undefined;
+
+	let cursor: ts.ObjectLiteralExpression | undefined = storyObject;
+	for (const key of ["parameters", "docs", "source"]) {
+		const prop = cursor && findObjectProperty(cursor, key);
+		cursor = prop && ts.isObjectLiteralExpression(prop) ? prop : undefined;
+		if (!cursor) return undefined;
+	}
+
+	const codeProp = findObjectProperty(cursor, "code");
+	if (!codeProp) return undefined;
+
+	return extractStringLiteralText(codeProp, sourceFile);
+}
+
+/** Find a story export's object literal initializer, e.g. `export const Primary = { ... };`. */
+function findStoryObjectLiteral(
+	sourceFile: ts.SourceFile,
+	storyExportName: string,
+): ts.ObjectLiteralExpression | undefined {
 	for (const statement of sourceFile.statements) {
 		if (!ts.isVariableStatement(statement)) continue;
 
@@ -189,35 +245,26 @@ export function extractStoryRenderTemplate(
 				ts.isIdentifier(d.name) &&
 				(d.name as ts.Identifier).text === storyExportName,
 		);
-		if (!decl?.initializer || !ts.isObjectLiteralExpression(decl.initializer))
-			continue;
-
-		const renderProp = decl.initializer.properties.find(
-			(p): p is ts.PropertyAssignment =>
-				ts.isPropertyAssignment(p) &&
-				ts.isIdentifier(p.name) &&
-				(p.name as ts.Identifier).text === "render",
-		);
-		if (!renderProp) continue;
-
-		const fn = renderProp.initializer;
-		if (!ts.isArrowFunction(fn) && !ts.isFunctionExpression(fn)) continue;
-
-		const returnObj = resolveRenderReturnObject(fn);
-		if (!returnObj) continue;
-
-		const templateProp = returnObj.properties.find(
-			(p): p is ts.PropertyAssignment =>
-				ts.isPropertyAssignment(p) &&
-				ts.isIdentifier(p.name) &&
-				(p.name as ts.Identifier).text === "template",
-		);
-		if (!templateProp) continue;
-
-		return extractStringLiteralText(templateProp.initializer, sourceFile);
+		if (decl?.initializer && ts.isObjectLiteralExpression(decl.initializer)) {
+			return decl.initializer;
+		}
 	}
 
 	return undefined;
+}
+
+/** Find a plain `key: value` property's initializer expression on an object literal. */
+function findObjectProperty(
+	obj: ts.ObjectLiteralExpression,
+	key: string,
+): ts.Expression | undefined {
+	const prop = obj.properties.find(
+		(p): p is ts.PropertyAssignment =>
+			ts.isPropertyAssignment(p) &&
+			ts.isIdentifier(p.name) &&
+			(p.name as ts.Identifier).text === key,
+	);
+	return prop?.initializer;
 }
 
 function resolveRenderReturnObject(

@@ -228,7 +228,7 @@ describe("manifest generator — stories", () => {
 		expect(storyNames).toContain("Custom Template");
 	});
 
-	it("uses render.template when @useTemplate is present", async () => {
+	it("uses render.template when @useTemplate is present and no docs.source.code is set", async () => {
 		const result = await runManifest();
 		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
@@ -236,6 +236,19 @@ describe("manifest generator — stories", () => {
 		const custom = component?.stories.find((s) => s.name === "Custom Template");
 		expect(custom?.snippet).toBe(
 			'<app-button label="custom template"></app-button>',
+		);
+	});
+
+	it("prefers parameters.docs.source.code over render.template when @useTemplate is present", async () => {
+		const result = await runManifest();
+		const component = getComponents(result).find(
+			(c) => c.name === "ButtonComponent",
+		);
+		const docsSource = component?.stories.find(
+			(s) => s.name === "Docs Source Template",
+		);
+		expect(docsSource?.snippet).toBe(
+			'<app-button label="from docs source"></app-button>',
 		);
 	});
 });
