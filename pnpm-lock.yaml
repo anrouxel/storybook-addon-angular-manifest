@@ -20,6 +20,9 @@ importers:
       pathe:
         specifier: ^2.0.3
         version: 2.0.3
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
     devDependencies:
       '@angular/core':
         specifier: ^22.0.4
@@ -66,9 +69,6 @@ importers:
       tsdown:
         specifier: ^0.22.3
         version: 0.22.3(oxc-resolver@11.21.3)(typescript@6.0.3)
-      typescript:
-        specifier: ^6.0.3
-        version: 6.0.3
       vitest:
         specifier: ^4.1.9
         version: 4.1.9(@types/node@26.0.1)(vite@8.1.0(@types/node@26.0.1)(esbuild@0.28.1)(jiti@2.6.1)(sass@1.99.0)(yaml@2.9.0))
@@ -7415,7 +7415,7 @@ snapshots:
       picomatch: 4.0.4
       postcss: 8.5.16
       rollup: 4.60.2
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.17
     optionalDependencies:
       '@types/node': 26.0.1
       fsevents: 2.3.3
