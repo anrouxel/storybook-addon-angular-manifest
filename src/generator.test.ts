@@ -257,15 +257,13 @@ describe("manifest generator — LibBtnDirective (compound selector)", () => {
 		expect(directive?.selector).toBe("button[lib-btn], a[lib-btn]");
 	});
 
-	it("produces multiple snippets for compound selectors", async () => {
+	it("uses the first selector variant for compound selectors", async () => {
 		const result = await runManifest();
 		const directive = getComponents(result).find(
 			(c) => c.name === "LibBtnDirective",
 		);
 		const primary = directive?.stories.find((s) => s.name === "Primary");
-		expect(primary?.snippets).toHaveLength(2);
-		expect(primary?.snippets?.[0]).toBe("<button lib-btn></button>");
-		expect(primary?.snippets?.[1]).toBe("<a lib-btn></a>");
+		expect(primary?.snippet).toBe("<button lib-btn></button>");
 	});
 
 	it("attaches the directive import from the package name", async () => {
@@ -278,19 +276,15 @@ describe("manifest generator — LibBtnDirective (compound selector)", () => {
 		);
 	});
 
-	it("generates correct compound snippets for the Secondary story with args", async () => {
+	it("generates a correct compound snippet for the Secondary story with args", async () => {
 		const result = await runManifest();
 		const directive = getComponents(result).find(
 			(c) => c.name === "LibBtnDirective",
 		);
 		const secondary = directive?.stories.find((s) => s.name === "Secondary");
 		// Secondary has args: { variant: "secondary" }
-		expect(secondary?.snippets).toHaveLength(2);
-		expect(secondary?.snippets?.[0]).toBe(
+		expect(secondary?.snippet).toBe(
 			'<button lib-btn variant="secondary"></button>',
-		);
-		expect(secondary?.snippets?.[1]).toBe(
-			'<a lib-btn variant="secondary"></a>',
 		);
 	});
 });
