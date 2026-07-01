@@ -433,7 +433,7 @@ describe("extractAngularStorySnippets — compound selector (multiple variants)"
 		expect(entry?.snippet).toBe("<button lib-btn></button>");
 	});
 
-	it("picks the selector variant matching the story's own render host, without using the render template verbatim", () => {
+	it("still uses the first selector variant when the story has its own render template", () => {
 		const compodocMultiWithInput = {
 			...compodocMulti,
 			inputsClass: [{ name: "variant", type: "string", optional: true }],
@@ -454,9 +454,11 @@ describe("extractAngularStorySnippets — compound selector (multiple variants)"
 			compodocMultiWithInput,
 			"LibBtnDirective",
 		);
-		// Picks the "a" variant (matching render's root tag) but still generates the
-		// binding from args, rather than reusing the hand-written render template as-is.
-		expect(entry?.snippet).toBe('<a lib-btn variant="secondary"></a>');
+		// No root-tag detection: the first variant is used regardless of the render
+		// template's own root tag, and the binding is still generated from args.
+		expect(entry?.snippet).toBe(
+			'<button lib-btn variant="secondary"></button>',
+		);
 	});
 });
 

@@ -8,7 +8,7 @@ A Storybook addon that builds an **Angular component manifest** from your storie
 ## Features
 
 - **Compodoc integration** — reads `documentation.json` and matches each story's component to its Compodoc entry to extract inputs, outputs, selector, standalone flag and change detection strategy.
-- **Angular template snippets** — generates a `<component ...>` snippet per story from the component's selector and args. When the selector has multiple comma-separated variants (e.g. `button[lib-btn], a[lib-btn]`), the variant matching the story's own `render` host element is picked automatically, falling back to the first variant otherwise.
+- **Angular template snippets** — generates a `<component ...>` snippet per story from the component's selector and args. When the selector has multiple comma-separated variants (e.g. `button[lib-btn], a[lib-btn]`), the first variant is used.
 - **JSDoc tags** — parses `@summary`, `@describe`/`@desc` and other JSDoc tags from the story's `meta` or the story export itself.
 - **`@useTemplate` opt-in** — use the story's `parameters.docs.source.code` (the same code Storybook's Docs "Show code" panel displays) as the snippet instead of the generated one, falling back to the story's `render` template if no `docs.source.code` is set.
 - **Import statement resolution** — infers the import specifier for each component, preferring the nearest `package.json` name when the component belongs to a published package.
