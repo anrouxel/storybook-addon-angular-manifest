@@ -1,5 +1,11 @@
 # @anrouxel/storybook-addon-angular-manifest
 
+## 1.0.0-next.3
+
+### Minor Changes
+
+- [#14](https://github.com/anrouxel/storybook-addon-angular-manifest/pull/14) [`693e69f`](https://github.com/anrouxel/storybook-addon-angular-manifest/commit/693e69fb09eaa2cd71385dbfc1350254cc178d22) Thanks [@anrouxel](https://github.com/anrouxel)! - feat: @useTemplate now prefers parameters.docs.source.code over the story's render template, falling back to render.template when docs.source.code is not set
+
 ## 1.0.0-next.2
 
 ### Minor Changes
