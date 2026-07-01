@@ -129,9 +129,8 @@ export function extractAngularStorySnippets(
 				// @useTemplate opt-in: use the story's parameters.docs.source.code verbatim as
 				// the snippet — the same code Storybook's "Show code" panel would display —
 				// falling back to render.template when no docs.source.code is set.
-				// Without the tag, a render.template (if any) is only used to detect which
-				// selector variant (host element) the story targets — the snippet itself is
-				// still auto-generated from Compodoc + args, same as a story with no render.
+				// Without the tag, the snippet is always auto-generated from Compodoc + args,
+				// same as a story with no render.
 				const renderTemplate = extractStoryRenderTemplate(
 					sourceFile,
 					storyExport,
@@ -145,13 +144,7 @@ export function extractAngularStorySnippets(
 				const snippet =
 					useTemplate && templateOverride
 						? templateOverride
-						: buildAngularSnippet(
-								selector,
-								inputs,
-								outputs,
-								args,
-								extractRootTagName(renderTemplate),
-							);
+						: buildAngularSnippet(selector, inputs, outputs, args);
 
 				return {
 					id: story.id,
@@ -306,20 +299,6 @@ function extractStringLiteralText(
 		return node.getText(sourceFile);
 	}
 	return undefined;
-}
-
-/**
- * Extract the root element/component tag name from a template string, e.g.
- * `"<a storybookButton primary>{{ label }}</a>"` → `"a"`.
- *
- * Used to detect which selector variant a story's own `render.template` targets,
- * without treating the template itself as the snippet.
- */
-function extractRootTagName(template: string | undefined): string | undefined {
-	return template
-		?.trim()
-		.match(/^<([a-zA-Z][\w-]*)/)?.[1]
-		?.toLowerCase();
 }
 
 // ---------------------------------------------------------------------------
@@ -515,9 +494,8 @@ function renderSnippet(
  * Generate an Angular template snippet from the component's selector.
  *
  * A selector like `"button[lib-btn], a[lib-btn]"` has multiple comma-separated
- * variants. When `preferredHost` (detected from the story's own `render.template`,
- * if any) matches one of them, that variant is used; otherwise the first one is
- * (the full selector is already exposed once on the component's `selector` field).
+ * variants; the first one is used (the full selector is already exposed once on
+ * the component's `selector` field).
  *
  * Returns `undefined` when the selector is missing (no guess is attempted).
  */
@@ -526,7 +504,6 @@ function buildAngularSnippet(
 	inputs: import("./compodocTypes").Property[],
 	outputs: import("./compodocTypes").Property[],
 	args: Record<string, unknown> | undefined,
-	preferredHost?: string,
 ): string | undefined {
 	if (!selector) {
 		return undefined;
@@ -534,10 +511,7 @@ function buildAngularSnippet(
 
 	const bindings = buildBindings(inputs, outputs, args);
 	const variants = selector.split(",").map((part) => parseSelectorPart(part));
-	const chosen =
-		(preferredHost && variants.find((v) => v.element === preferredHost)) ||
-		variants[0] ||
-		parseSelectorPart(selector);
+	const chosen = variants[0] ?? parseSelectorPart(selector);
 
 	return renderSnippet(chosen, bindings);
 }
