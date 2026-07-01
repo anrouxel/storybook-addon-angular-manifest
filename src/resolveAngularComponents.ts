@@ -90,14 +90,15 @@ export function extractAngularStorySnippets(
 	_componentName: string | undefined,
 	filterStoryIds?: ReadonlySet<string>,
 ): ResolvedAngularStoryEntry[] {
-	const selector = (compodocData as any)?.selector as string | undefined;
+	const selector = compodocData?.selector;
 	const inputs = compodocData?.inputsClass ?? [];
 	const outputs = compodocData?.outputsClass ?? [];
 
 	// Parse the source file once for render-template extraction.
 	// csf._code may be undefined in some storybook versions; fall back to the Babel
 	// intermediate representation (_file.code) which always contains the raw source.
-	const rawCode: string = (csf as any)._code ?? (csf as any)._file?.code ?? "";
+	const rawCode: string =
+		(csf as ParsedCsf & { _code?: string })._code ?? csf._file?.code ?? "";
 	const sourceFile = ts.createSourceFile(
 		"story.ts",
 		rawCode,
@@ -121,9 +122,9 @@ export function extractAngularStorySnippets(
 
 				// loadCsf from storybook/internal/csf-tools does not populate story.args with
 				// static literal values from the source file; fall back to AST extraction.
-				const loadedArgs = (story as any).args as
-					| Record<string, unknown>
-					| undefined;
+				const loadedArgs = (
+					story as typeof story & { args?: Record<string, unknown> }
+				).args;
 				const args = loadedArgs ?? extractStoryArgs(sourceFile, storyExport);
 
 				// @useTemplate opt-in: use the story's parameters.docs.source.code verbatim as
@@ -214,7 +215,8 @@ export function extractStoryDocsSourceCode(
 
 	let cursor: ts.ObjectLiteralExpression | undefined = storyObject;
 	for (const key of ["parameters", "docs", "source"]) {
-		const prop = cursor && findObjectProperty(cursor, key);
+		const prop: ts.Expression | undefined =
+			cursor && findObjectProperty(cursor, key);
 		cursor = prop && ts.isObjectLiteralExpression(prop) ? prop : undefined;
 		if (!cursor) return undefined;
 	}

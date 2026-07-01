@@ -37,7 +37,7 @@ import {
 /** Cast the manifest result to a typed record of AngularComponentManifest. */
 function getComponents(result: Awaited<ReturnType<typeof manifest>>) {
 	return Object.values(
-		(result as any).components.components as Record<
+		(result?.components?.components ?? {}) as Record<
 			string,
 			AngularComponentManifest
 		>,
@@ -77,8 +77,8 @@ async function runManifest(
 		outputDir: `${ROOT}/storybook-static`,
 		cacheDir: `${ROOT}/.cache`,
 		packageJson: {},
-		presets: {} as any,
-	} as any);
+		presets: {},
+	} as unknown as Parameters<typeof manifest>[1]);
 }
 
 // ---------------------------------------------------------------------------
@@ -335,7 +335,7 @@ describe("manifest generator — compodoc summary", () => {
 		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
-		const compodoc = component?.compodoc as any;
+		const compodoc = component?.compodoc;
 		const labelInput = compodoc?.inputs?.find(
 			(i: { name: string }) => i.name === "label",
 		);
@@ -359,7 +359,7 @@ describe("manifest generator — compodoc summary", () => {
 		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
-		const compodoc = component?.compodoc as any;
+		const compodoc = component?.compodoc;
 		const clickedOutput = compodoc?.outputs?.find(
 			(o: { name: string }) => o.name === "clicked",
 		);
@@ -381,7 +381,7 @@ describe("manifest generator — compodoc summary", () => {
 		const component = getComponents(result).find(
 			(c) => c.name === "ButtonComponent",
 		);
-		const compodoc = component?.compodoc as any;
+		const compodoc = component?.compodoc;
 		expect(compodoc).toHaveProperty("inputs");
 		expect(compodoc).toHaveProperty("outputs");
 		expect(compodoc).not.toHaveProperty("inputsClass");
@@ -431,8 +431,8 @@ describe("manifest generator — compodoc missing", () => {
 			outputDir: `${ROOT}/storybook-static`,
 			cacheDir: `${ROOT}/.cache`,
 			packageJson: {},
-			presets: {} as any,
-		} as any);
+			presets: {},
+		} as unknown as Parameters<typeof manifest>[1]);
 
 		const component = getComponents(result)[0];
 		expect(component?.error).toBeDefined();
