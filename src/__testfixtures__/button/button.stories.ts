@@ -28,3 +28,20 @@ export const CustomTemplate: StoryObj<ButtonComponent> = {
 		template: `<app-button label="custom template"></app-button>`,
 	}),
 };
+
+/**
+ * Uses parameters.docs.source.code instead of the render template or Compodoc snippet.
+ * @useTemplate
+ */
+export const DocsSourceTemplate: StoryObj<ButtonComponent> = {
+	render: (_args) => ({
+		template: `<app-button label="IGNORED"></app-button>`,
+	}),
+	parameters: {
+		docs: {
+			source: {
+				code: `<app-button label="from docs source"></app-button>`,
+			},
+		},
+	},
+};

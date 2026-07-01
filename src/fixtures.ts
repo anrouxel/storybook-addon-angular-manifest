@@ -90,6 +90,15 @@ const storyIndex = {
 			subtype: "story" as const,
 			tags: [DEV, TEST, MANIFEST],
 		},
+		"components-button--docs-source-template": {
+			id: "components-button--docs-source-template",
+			title: "Components/Button",
+			name: "Docs Source Template",
+			importPath: "./src/button/button.stories.ts",
+			type: "story" as const,
+			subtype: "story" as const,
+			tags: [DEV, TEST, MANIFEST],
+		},
 		// LibBtn directive stories
 		// Note: CSF converts "Directives/LibBtn" → "directives-libbtn" (no hyphen)
 		"directives-libbtn--primary": {
