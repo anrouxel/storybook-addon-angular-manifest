@@ -1,5 +1,11 @@
 # @anrouxel/storybook-addon-angular-manifest
 
+## 1.0.0-next.2
+
+### Minor Changes
+
+- [#12](https://github.com/anrouxel/storybook-addon-angular-manifest/pull/12) [`9bcfdb7`](https://github.com/anrouxel/storybook-addon-angular-manifest/commit/9bcfdb71c1403ae14750230666a800fcfeac7a5e) Thanks [@anrouxel](https://github.com/anrouxel)! - feat: enhance selector detection and simplify snippets management
+
 ## 1.0.0-next.1
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "@anrouxel/storybook-addon-angular-manifest",
-  "version": "1.0.0-next.1",
+  "version": "1.0.0-next.2",
   "description": "Storybook addon to generate a manifest of Angular components",
   "keywords": [
     "storybook-addon",
