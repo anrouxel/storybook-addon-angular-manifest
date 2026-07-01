@@ -5,6 +5,7 @@
     "@anrouxel/storybook-addon-angular-manifest": "0.0.0"
   },
   "changesets": [
+    "bright-forks-shop",
     "early-weeks-help",
     "five-sheep-refuse",
     "rich-clubs-lead",
