@@ -192,8 +192,8 @@ describe("extractAngularStorySnippets — element selector", () => {
 	it("generates snippet with element selector and no args", () => {
 		const csf = makeParsedCsf({
 			_code: "export const Primary = {};",
-			_stories: { Primary: { id: "button--primary", name: "Primary" } as any },
-			_storyStatements: { Primary: undefined as any },
+			_stories: { Primary: { id: "button--primary", name: "Primary" } },
+			_storyStatements: { Primary: undefined },
 		});
 
 		const [entry] = extractAngularStorySnippets(
@@ -212,9 +212,9 @@ describe("extractAngularStorySnippets — element selector", () => {
 					id: "button--with-label",
 					name: "With Label",
 					args: { label: "Click me" },
-				} as any,
+				},
 			},
-			_storyStatements: { WithLabel: undefined as any },
+			_storyStatements: { WithLabel: undefined },
 		});
 
 		const [entry] = extractAngularStorySnippets(
@@ -233,9 +233,9 @@ describe("extractAngularStorySnippets — element selector", () => {
 					id: "button--disabled",
 					name: "Disabled",
 					args: { disabled: true },
-				} as any,
+				},
 			},
-			_storyStatements: { Disabled: undefined as any },
+			_storyStatements: { Disabled: undefined },
 		});
 
 		const [entry] = extractAngularStorySnippets(
@@ -255,9 +255,9 @@ describe("extractAngularStorySnippets — element selector", () => {
 					id: "button--enabled",
 					name: "Enabled",
 					args: { disabled: false },
-				} as any,
+				},
 			},
-			_storyStatements: { Enabled: undefined as any },
+			_storyStatements: { Enabled: undefined },
 		});
 
 		const [entry] = extractAngularStorySnippets(
@@ -276,9 +276,9 @@ describe("extractAngularStorySnippets — element selector", () => {
 					id: "button--with-count",
 					name: "With Count",
 					args: { count: 42 },
-				} as any,
+				},
 			},
-			_storyStatements: { WithCount: undefined as any },
+			_storyStatements: { WithCount: undefined },
 		});
 
 		const [entry] = extractAngularStorySnippets(
@@ -297,9 +297,9 @@ describe("extractAngularStorySnippets — element selector", () => {
 					id: "button--with-click",
 					name: "With Click",
 					args: { clicked: () => {} },
-				} as any,
+				},
 			},
-			_storyStatements: { WithClick: undefined as any },
+			_storyStatements: { WithClick: undefined },
 		});
 
 		const [entry] = extractAngularStorySnippets(
@@ -318,9 +318,9 @@ describe("extractAngularStorySnippets — element selector", () => {
 					id: "button--primary",
 					name: "Primary",
 					args: { unknown: "value" },
-				} as any,
+				},
 			},
-			_storyStatements: { Primary: undefined as any },
+			_storyStatements: { Primary: undefined },
 		});
 
 		const [entry] = extractAngularStorySnippets(
@@ -345,8 +345,8 @@ describe("extractAngularStorySnippets — required signal inputs", () => {
 	it("adds placeholder for required inputs with no provided arg", () => {
 		const csf = makeParsedCsf({
 			_code: "export const Primary = {};",
-			_stories: { Primary: { id: "button--primary", name: "Primary" } as any },
-			_storyStatements: { Primary: undefined as any },
+			_stories: { Primary: { id: "button--primary", name: "Primary" } },
+			_storyStatements: { Primary: undefined },
 		});
 
 		const [entry] = extractAngularStorySnippets(
@@ -365,9 +365,9 @@ describe("extractAngularStorySnippets — required signal inputs", () => {
 					id: "button--primary",
 					name: "Primary",
 					args: { label: "Click" },
-				} as any,
+				},
 			},
-			_storyStatements: { Primary: undefined as any },
+			_storyStatements: { Primary: undefined },
 		});
 
 		const [entry] = extractAngularStorySnippets(
@@ -394,8 +394,8 @@ describe("extractAngularStorySnippets — attribute-only selector", () => {
 	it("uses div as fallback host for attribute-only selector", () => {
 		const csf = makeParsedCsf({
 			_code: "export const Primary = {};",
-			_stories: { Primary: { id: "dir--primary", name: "Primary" } as any },
-			_storyStatements: { Primary: undefined as any },
+			_stories: { Primary: { id: "dir--primary", name: "Primary" } },
+			_storyStatements: { Primary: undefined },
 		});
 
 		const [entry] = extractAngularStorySnippets(
@@ -421,8 +421,8 @@ describe("extractAngularStorySnippets — compound selector (multiple variants)"
 	it("uses the first selector variant as the snippet", () => {
 		const csf = makeParsedCsf({
 			_code: "export const Primary = {};",
-			_stories: { Primary: { id: "dir--primary", name: "Primary" } as any },
-			_storyStatements: { Primary: undefined as any },
+			_stories: { Primary: { id: "dir--primary", name: "Primary" } },
+			_storyStatements: { Primary: undefined },
 		});
 
 		const [entry] = extractAngularStorySnippets(
@@ -445,8 +445,8 @@ describe("extractAngularStorySnippets — compound selector (multiple variants)"
 					render: (args) => ({ template: \`<a lib-btn></a>\` }),
 				};
 			`,
-			_stories: { AsLink: { id: "dir--as-link", name: "As Link" } as any },
-			_storyStatements: { AsLink: undefined as any },
+			_stories: { AsLink: { id: "dir--as-link", name: "As Link" } },
+			_storyStatements: { AsLink: undefined },
 		});
 
 		const [entry] = extractAngularStorySnippets(
@@ -481,9 +481,9 @@ describe("extractAngularStorySnippets — void elements", () => {
 					id: "input--primary",
 					name: "Primary",
 					args: { placeholder: "Type here" },
-				} as any,
+				},
 			},
-			_storyStatements: { Primary: undefined as any },
+			_storyStatements: { Primary: undefined },
 		});
 
 		const [entry] = extractAngularStorySnippets(
@@ -500,8 +500,8 @@ describe("extractAngularStorySnippets — no selector", () => {
 	it("returns undefined snippet when compodoc has no selector", () => {
 		const csf = makeParsedCsf({
 			_code: "export const Primary = {};",
-			_stories: { Primary: { id: "btn--primary", name: "Primary" } as any },
-			_storyStatements: { Primary: undefined as any },
+			_stories: { Primary: { id: "btn--primary", name: "Primary" } },
+			_storyStatements: { Primary: undefined },
 		});
 
 		const compodocNoSelector = { ...compodocButton, selector: undefined };
@@ -551,9 +551,9 @@ export const WithRender = {
 					id: "button--with-render",
 					name: "With Render",
 					args: { label: "Click" },
-				} as any,
+				},
 			},
-			_storyStatements: { WithRender: undefined as any },
+			_storyStatements: { WithRender: undefined },
 		});
 
 		const [entry] = extractAngularStorySnippets(
@@ -626,10 +626,10 @@ describe("extractAngularStorySnippets — static AST arg extraction", () => {
 		return makeParsedCsf({
 			_code: code,
 			_stories: Object.fromEntries(
-				Object.entries(stories).map(([k, v]) => [k, v as any]),
+				Object.entries(stories).map(([k, v]) => [k, v]),
 			),
 			_storyStatements: Object.fromEntries(
-				Object.keys(stories).map((k) => [k, undefined as any]),
+				Object.keys(stories).map((k) => [k, undefined]),
 			),
 		});
 	}
@@ -760,12 +760,12 @@ describe("extractAngularStorySnippets — filterStoryIds", () => {
 		const csf = makeParsedCsf({
 			_code: "export const Primary = {}; export const Secondary = {};",
 			_stories: {
-				Primary: { id: "btn--primary", name: "Primary" } as any,
-				Secondary: { id: "btn--secondary", name: "Secondary" } as any,
+				Primary: { id: "btn--primary", name: "Primary" },
+				Secondary: { id: "btn--secondary", name: "Secondary" },
 			},
 			_storyStatements: {
-				Primary: undefined as any,
-				Secondary: undefined as any,
+				Primary: undefined,
+				Secondary: undefined,
 			},
 		});
 
