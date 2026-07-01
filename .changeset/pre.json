@@ -1,8 +1,0 @@
-{
-  "mode": "exit",
-  "tag": "next",
-  "initialVersions": {
-    "@anrouxel/storybook-addon-angular-manifest": "1.0.0-next.0"
-  },
-  "changesets": []
-}
