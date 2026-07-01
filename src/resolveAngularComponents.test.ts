@@ -353,7 +353,7 @@ describe("extractAngularStorySnippets — compound selector (multiple variants)"
 		methodsClass: [],
 	};
 
-	it("produces one snippet per selector variant", () => {
+	it("uses the first selector variant as the snippet", () => {
 		const csf = makeParsedCsf({
 			_code: "export const Primary = {};",
 			_stories: { Primary: { id: "dir--primary", name: "Primary" } as any },
@@ -365,10 +365,33 @@ describe("extractAngularStorySnippets — compound selector (multiple variants)"
 			compodocMulti,
 			"LibBtnDirective",
 		);
-		expect(entry?.snippets).toHaveLength(2);
-		expect(entry?.snippets?.[0]).toBe("<button lib-btn></button>");
-		expect(entry?.snippets?.[1]).toBe("<a lib-btn></a>");
 		expect(entry?.snippet).toBe("<button lib-btn></button>");
+	});
+
+	it("picks the selector variant matching the story's own render host, without using the render template verbatim", () => {
+		const compodocMultiWithInput = {
+			...compodocMulti,
+			inputsClass: [{ name: "variant", type: "string", optional: true }],
+		};
+		const csf = makeParsedCsf({
+			_code: `
+				export const AsLink = {
+					args: { variant: "secondary" },
+					render: (args) => ({ template: \`<a lib-btn></a>\` }),
+				};
+			`,
+			_stories: { AsLink: { id: "dir--as-link", name: "As Link" } as any },
+			_storyStatements: { AsLink: undefined as any },
+		});
+
+		const [entry] = extractAngularStorySnippets(
+			csf,
+			compodocMultiWithInput,
+			"LibBtnDirective",
+		);
+		// Picks the "a" variant (matching render's root tag) but still generates the
+		// binding from args, rather than reusing the hand-written render template as-is.
+		expect(entry?.snippet).toBe('<a lib-btn variant="secondary"></a>');
 	});
 });
 
@@ -421,7 +444,6 @@ describe("extractAngularStorySnippets — no selector", () => {
 			"ButtonComponent",
 		);
 		expect(entry?.snippet).toBeUndefined();
-		expect(entry?.snippets).toBeUndefined();
 	});
 });
 
