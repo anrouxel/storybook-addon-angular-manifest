@@ -1,5 +1,11 @@
 # @anrouxel/storybook-addon-angular-manifest
 
+## 1.0.1
+
+### Patch Changes
+
+- [#21](https://github.com/anrouxel/storybook-addon-angular-manifest/pull/21) [`d5778b3`](https://github.com/anrouxel/storybook-addon-angular-manifest/commit/d5778b390241c635769cf3a2ecb348313587d676) Thanks [@anrouxel](https://github.com/anrouxel)! - fix: storybook peer dependency version
+
 ## 1.0.0
 
 ### Major Changes
