@@ -148,6 +148,9 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
+      - name: Update npm
+        run: npm install -g npm@latest
+
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
