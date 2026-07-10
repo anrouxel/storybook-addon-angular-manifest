@@ -1,5 +1,11 @@
 # @anrouxel/storybook-addon-angular-manifest
 
+## 1.0.2
+
+### Patch Changes
+
+- [#23](https://github.com/anrouxel/storybook-addon-angular-manifest/pull/23) [`e886274`](https://github.com/anrouxel/storybook-addon-angular-manifest/commit/e88627441a5d9ad5008e29c23933eb33d1318709) Thanks [@anrouxel](https://github.com/anrouxel)! - chore: update dependencies
+
 ## 1.0.1
 
 ### Patch Changes
