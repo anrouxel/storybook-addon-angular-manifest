@@ -1,5 +1,11 @@
 # @anrouxel/storybook-addon-angular-manifest
 
+## 1.0.3
+
+### Patch Changes
+
+- [`6522d56`](https://github.com/anrouxel/storybook-addon-angular-manifest/commit/6522d564c03b9ba838657b28331ba0b097780ea5) Thanks [@anrouxel](https://github.com/anrouxel)! - chore: node 22 to 24
+
 ## 1.0.2
 
 ### Patch Changes
