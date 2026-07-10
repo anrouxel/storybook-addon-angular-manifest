@@ -48,28 +48,28 @@
     "comment-parser": "^1.4.7",
     "empathic": "^2.0.1",
     "pathe": "^2.0.3",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   },
   "devDependencies": {
-    "@angular/core": "^22.0.4",
-    "@biomejs/biome": "2.5.1",
+    "@angular/core": "^22.0.6",
+    "@biomejs/biome": "2.5.3",
     "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "next",
-    "@commitlint/cli": "^21.2.0",
+    "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
     "@commitlint/types": "^21.2.0",
     "@storybook/angular-vite": "next",
-    "@types/node": "^26.0.1",
-    "lefthook": "^2.1.9",
-    "memfs": "^4.57.8",
+    "@types/node": "^26.1.1",
+    "lefthook": "^2.1.10",
+    "memfs": "^4.64.0",
     "npm-run-all2": "^9.0.2",
     "storybook": "next",
     "ts-dedent": "^2.3.0",
-    "tsdown": "^0.22.3",
-    "vitest": "^4.1.9"
+    "tsdown": "^0.22.4",
+    "vitest": "^4.1.10"
   },
   "peerDependencies": {
-    "storybook": "^10.5.0-alpha.9"
+    "storybook": "^10.5.0"
   },
   "publishConfig": {
     "access": "public"
@@ -82,5 +82,5 @@
     ],
     "icon": "https://angular.io/assets/images/logos/angular/angular.svg"
   },
-  "packageManager": "pnpm@11.9.0"
+  "packageManager": "pnpm@11.11.0"
 }
