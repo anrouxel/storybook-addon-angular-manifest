@@ -1,5 +1,11 @@
 # @anrouxel/storybook-addon-angular-manifest
 
+## 1.0.4
+
+### Patch Changes
+
+- [#27](https://github.com/anrouxel/storybook-addon-angular-manifest/pull/27) [`fa040c0`](https://github.com/anrouxel/storybook-addon-angular-manifest/commit/fa040c016c55fb44fc9f5b3595832a3026c48a9e) Thanks [@anrouxel](https://github.com/anrouxel)! - chore: add es2025
+
 ## 1.0.3
 
 ### Patch Changes
