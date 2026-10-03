@@ -1,5 +1,11 @@
 # @anrouxel/storybook-addon-angular-manifest
 
+## 1.0.5
+
+### Patch Changes
+
+- [#30](https://github.com/anrouxel/storybook-addon-angular-manifest/pull/30) [`a6ec181`](https://github.com/anrouxel/storybook-addon-angular-manifest/commit/a6ec1817b0a4f57a9706d6868d911f6d06846419) Thanks [@anrouxel](https://github.com/anrouxel)! - docs: mark addon as deprecated and suggest migration
+
 ## 1.0.4
 
 ### Patch Changes
