@@ -1,5 +1,22 @@
 # Storybook Addon Angular Manifest
 
+> [!WARNING]
+> ## Deprecated
+>
+> This package is **deprecated** and is no longer maintained.
+>
+> Starting with **Storybook 10.6**, the functionality provided by this addon is available natively in **`@storybook/angular-vite`**.
+>
+> `@storybook/angular-vite` replaces **`@storybook/angular`** as the recommended Angular framework for Storybook and now provides native component manifest generation, including component APIs, documentation, usage examples and MCP/AI integration.
+>
+> You should therefore migrate from:
+>
+> - `@storybook/angular` → `@storybook/angular-vite`
+> - `@anrouxel/storybook-addon-angular-manifest` → the built-in manifest support provided by Storybook
+>
+> See the official Storybook documentation:
+> [Storybook — Manifests](https://storybook.js.org/docs/ai/manifests) · [Storybook for Angular with Vite](https://storybook.js.org/docs/get-started/frameworks/angular-vite)
+
 [![npm version](https://img.shields.io/npm/v/@anrouxel/storybook-addon-angular-manifest.svg)](https://www.npmjs.com/package/@anrouxel/storybook-addon-angular-manifest)
 [![license](https://img.shields.io/npm/l/@anrouxel/storybook-addon-angular-manifest.svg)](./LICENSE.md)
 
